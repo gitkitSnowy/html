@@ -13,7 +13,7 @@
         }
         
         body {
-            background: linear-gradient(135deg, #87CEEB 0%, #98FB98 100%);
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
             display: flex;
             justify-content: center;
@@ -242,6 +242,7 @@
             font-size: 18px;
             text-align: center;
             border: 2px solid white;
+            background: white;
         }
         
         .withdraw-input:focus {
@@ -290,30 +291,6 @@
             padding: 10px;
             border-radius: 10px;
             background: rgba(0,0,0,0.2);
-        }
-        
-        .go-to-bot-btn {
-            background: #0088cc;
-            color: white;
-            border: none;
-            padding: 15px 30px;
-            border-radius: 50px;
-            font-size: 18px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s;
-            box-shadow: 0 5px 0 #006699;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-            margin-top: 10px;
-            width: 100%;
-        }
-        
-        .go-to-bot-btn:active {
-            transform: translateY(5px);
-            box-shadow: 0 0px 0 #006699;
         }
         
         .shop-section {
@@ -488,12 +465,6 @@
             }
         }
         
-        .bot-link {
-            color: #0088cc;
-            text-decoration: none;
-            font-weight: 600;
-        }
-        
         @media (max-width: 600px) {
             .game-container {
                 padding: 16px;
@@ -618,16 +589,9 @@
                 </button>
             </div>
             <div class="withdraw-min">
-                Минимум: 50 мл • Максимум: сколько есть • 1000 мл = 1 л в боте
+                Минимум: 50 мл • 1000 мл = 1 л в боте
             </div>
             <div class="withdraw-status" id="withdrawStatus"></div>
-            
-            <!-- Кнопка для перехода в бота (появляется после вывода) -->
-            <button class="go-to-bot-btn" id="goToBotBtn" style="display: none;" onclick="goToBot()">
-                <span>🤖</span>
-                <span>Перейти в бота и получить молоко</span>
-                <span>➡️</span>
-            </button>
         </div>
         
         <div class="shop-section">
@@ -685,12 +649,13 @@
     </div>
 
     <script>
+        // ==================== КОНФИГУРАЦИЯ ====================
+        const BOT_USERNAME = 'MilkDrinkRobot'; // ЗАМЕНИ НА СВОЕГО БОТА!
+        
         // ==================== ИГРОВЫЕ ПЕРЕМЕННЫЕ ====================
         let milk = 0;
         let totalMilked = 0;
         let totalWithdrawn = 0;
-        let lastWithdrawAmount = 0;
-        let lastWithdrawLiters = 0;
         let bonusMultiplier = 1;
         
         let tg = null;
@@ -698,10 +663,7 @@
         let userName = null;
         let isConnected = false;
         
-        // Данные бота
-        const BOT_USERNAME = 'MilkDrinkRobot'; // Замени на username своего бота
-        const BOT_LINK = `https://t.me/${BOT_USERNAME}?start=farm_`;
-        
+        // Данные коров
         let cow1 = {
             milkAmount: 50,
             cooldown: 60,
@@ -723,6 +685,7 @@
             isMilked: false
         };
         
+        // Улучшения
         let upgrades = {
             bucket: false,
             auto: false,
@@ -755,11 +718,11 @@
                     // Загружаем сохранение
                     loadGame();
                     
-                    // Запрашиваем статистику
-                    requestBotStats();
+                    // Настраиваем обработчик сообщений
+                    setupMessageHandler();
                 } else {
                     updateConnectionStatus(false);
-                    showNotification('⚠️ Не удалось получить данные пользователя', 'warning');
+                    showNotification('⚠️ Запусти через команду /farm в боте', 'warning');
                     loadGame();
                 }
             } else {
@@ -772,152 +735,15 @@
             startAutoSave();
             startTimers();
             
-            // Устанавливаем максимальное значение для ввода
-            document.getElementById('withdrawAmount').addEventListener('input', function() {
-                let val = parseInt(this.value);
-                if (val < 50) this.value = 50;
-            });
-            
-            // Проверяем параметры URL (на случай если вернулись из бота)
-            checkUrlParams();
+            // Устанавливаем минимальное значение для ввода
+            document.getElementById('withdrawAmount').min = 50;
+            document.getElementById('withdrawAmount').value = 50;
         };
         
-        // ==================== ПРОВЕРКА PARAMS URL ====================
-        function checkUrlParams() {
-            const urlParams = new URLSearchParams(window.location.search);
-            const withdrawSuccess = urlParams.get('withdraw');
-            const amount = urlParams.get('amount');
-            
-            if (withdrawSuccess === 'success' && amount) {
-                showNotification(`✅ Вывод ${amount} мл подтверждён ботом!`, 'success');
-                document.getElementById('withdrawStatus').innerHTML = 
-                    `✅ Вывод ${amount} мл подтверждён! Молоко уже в боте.`;
-            }
-        }
-        
-        // ==================== СТАТУС ПОДКЛЮЧЕНИЯ ====================
-        function updateConnectionStatus(connected) {
-            isConnected = connected;
-            const statusEl = document.getElementById('connectionStatus');
-            const textEl = document.getElementById('connectionText');
-            
-            if (connected) {
-                statusEl.className = 'connection-status connected';
-                textEl.textContent = `Подключено к боту (${userName})`;
-            } else {
-                statusEl.className = 'connection-status disconnected';
-                textEl.textContent = 'Не подключено к боту. Используй /farm в боте!';
-            }
-        }
-        
-        // ==================== ЗАПРОС К БОТУ ====================
-        function requestBotStats() {
+        // ==================== НАСТРОЙКА ОБРАБОТЧИКА ====================
+        function setupMessageHandler() {
             if (!tg) return;
             
-            tg.sendData(JSON.stringify({
-                action: 'get_stats',
-                user_id: userId
-            }));
-        }
-        
-        // ==================== ПЕРЕХОД В БОТА ====================
-        function goToBot() {
-            if (lastWithdrawAmount > 0) {
-                // Формируем ссылку с параметром о выводе
-                const startParam = `withdraw_${lastWithdrawAmount}_${lastWithdrawLiters}`;
-                const url = `https://t.me/${BOT_USERNAME}?start=${startParam}`;
-                
-                showNotification('🔄 Перенаправление в бота...', 'success');
-                
-                // Открываем ссылку на бота
-                window.location.href = url;
-            }
-        }
-        
-        // ==================== ВЫВОД СРЕДСТВ ====================
-        function withdrawMilk() {
-            const input = document.getElementById('withdrawAmount');
-            let withdrawAmount = parseInt(input.value);
-            
-            if (isNaN(withdrawAmount) || withdrawAmount < 50) {
-                showNotification('❌ Минимальная сумма вывода: 50 мл', 'error');
-                document.getElementById('withdrawStatus').innerHTML = '❌ Минимум 50 мл';
-                return;
-            }
-            
-            if (withdrawAmount > milk) {
-                showNotification(`❌ У тебя только ${milk} мл молока`, 'error');
-                document.getElementById('withdrawStatus').innerHTML = `❌ Есть только ${milk} мл`;
-                return;
-            }
-            
-            // Округляем до ближайшего 50
-            withdrawAmount = Math.floor(withdrawAmount / 50) * 50;
-            if (withdrawAmount < 50) withdrawAmount = 50;
-            
-            let withdrawLiters = (withdrawAmount / 1000).toFixed(2);
-            
-            // Сохраняем информацию о выводе
-            lastWithdrawAmount = withdrawAmount;
-            lastWithdrawLiters = withdrawLiters;
-            
-            if (tg && userId) {
-                // Если есть подключение к Telegram WebApp - отправляем данные
-                if (!confirm(`💰 Вывести ${withdrawAmount} мл (${withdrawLiters} л) в бота?`)) {
-                    return;
-                }
-                
-                const btn = document.getElementById('withdrawBtn');
-                btn.disabled = true;
-                
-                document.getElementById('withdrawStatus').innerHTML = 
-                    `⏳ Отправка запроса на вывод ${withdrawAmount} мл...`;
-                
-                const data = {
-                    action: 'withdraw',
-                    user_id: userId,
-                    amount_ml: withdrawAmount,
-                    amount_l: parseFloat(withdrawLiters)
-                };
-                
-                console.log('Отправка данных:', data);
-                tg.sendData(JSON.stringify(data));
-                
-                // Показываем кнопку перехода в бота
-                setTimeout(() => {
-                    document.getElementById('goToBotBtn').style.display = 'inline-flex';
-                    document.getElementById('withdrawStatus').innerHTML = 
-                        `✅ Запрос отправлен! Нажми кнопку ниже чтобы перейти в бота и получить молоко.`;
-                }, 1500);
-                
-            } else {
-                // Если нет WebApp - просто открываем бота
-                if (!confirm(`💰 Перейти в бота для вывода ${withdrawAmount} мл (${withdrawLiters} л)?`)) {
-                    return;
-                }
-                
-                // Списание молока произойдёт после подтверждения от бота
-                document.getElementById('withdrawStatus').innerHTML = 
-                    `⏳ Перенаправление в бота для вывода ${withdrawAmount} мл...`;
-                
-                // Формируем ссылку с параметрами
-                const startParam = `withdraw_${withdrawAmount}_${withdrawLiters}`;
-                const url = `https://t.me/${BOT_USERNAME}?start=${startParam}`;
-                
-                // Сохраняем в локальное хранилище что мы ждём подтверждение
-                localStorage.setItem('pendingWithdraw', JSON.stringify({
-                    amount: withdrawAmount,
-                    liters: withdrawLiters,
-                    timestamp: Date.now()
-                }));
-                
-                // Открываем бота
-                window.location.href = url;
-            }
-        }
-        
-        // ==================== ОБРАБОТКА СООБЩЕНИЙ ОТ БОТА ====================
-        if (window.Telegram && Telegram.WebApp) {
             Telegram.WebApp.onEvent('message', function(message) {
                 console.log('Получено от бота:', message);
                 
@@ -930,20 +756,23 @@
                         totalWithdrawn += data.amount_ml;
                         
                         document.getElementById('withdrawStatus').innerHTML = 
-                            `✅ Выведено ${data.amount_ml} мл (${data.amount_l} л) в бота!`;
+                            `✅ Выведено ${data.amount_ml} мл (${data.amount_l} л)!`;
                         
                         showNotification(`✅ Выведено ${data.amount_ml} мл!`, 'success');
-                        
-                        // Показываем кнопку перехода в бота
-                        document.getElementById('goToBotBtn').style.display = 'inline-flex';
                         
                         saveGame();
                         updateDisplay();
                         
                         document.getElementById('withdrawBtn').disabled = false;
+                        
+                        // Показываем сообщение о возврате в бота
+                        setTimeout(() => {
+                            if (confirm(`✅ Молоко зачислено!\n\nПерейти в бота чтобы проверить баланс?`)) {
+                                window.location.href = `https://t.me/${BOT_USERNAME}`;
+                            }
+                        }, 1500);
                     }
                     else if (data.action === 'withdraw_error') {
-                        // Ошибка вывода
                         document.getElementById('withdrawStatus').innerHTML = 
                             `❌ Ошибка: ${data.message}`;
                         
@@ -952,13 +781,106 @@
                         document.getElementById('withdrawBtn').disabled = false;
                     }
                     else if (data.action === 'stats') {
-                        // Статистика от бота
                         showNotification(`📊 В боте: ${data.bot_milk} л`, 'success');
                     }
                 } catch (e) {
                     console.log('Не JSON сообщение:', message);
                 }
             });
+        }
+        
+        // ==================== СТАТУС ПОДКЛЮЧЕНИЯ ====================
+        function updateConnectionStatus(connected) {
+            isConnected = connected;
+            const statusEl = document.getElementById('connectionStatus');
+            const textEl = document.getElementById('connectionText');
+            
+            if (connected) {
+                statusEl.className = 'connection-status connected';
+                textEl.textContent = `✅ Подключено к боту (${userName})`;
+            } else {
+                statusEl.className = 'connection-status disconnected';
+                textEl.textContent = '❌ Не подключено. Используй /farm в боте!';
+            }
+        }
+        
+        // ==================== ВЫВОД СРЕДСТВ ====================
+        function withdrawMilk() {
+            const input = document.getElementById('withdrawAmount');
+            let withdrawAmount = parseInt(input.value);
+            
+            // Проверки
+            if (isNaN(withdrawAmount) || withdrawAmount < 50) {
+                showNotification('❌ Минимум 50 мл', 'error');
+                document.getElementById('withdrawStatus').innerHTML = '❌ Минимум 50 мл';
+                return;
+            }
+            
+            if (withdrawAmount > milk) {
+                showNotification(`❌ У тебя только ${milk} мл`, 'error');
+                document.getElementById('withdrawStatus').innerHTML = `❌ Есть только ${milk} мл`;
+                return;
+            }
+            
+            // Округляем до 50
+            withdrawAmount = Math.floor(withdrawAmount / 50) * 50;
+            if (withdrawAmount < 50) withdrawAmount = 50;
+            
+            let withdrawLiters = (withdrawAmount / 1000).toFixed(2);
+            
+            // Подтверждение
+            if (!confirm(`💰 Вывести ${withdrawAmount} мл (${withdrawLiters} л) в бота?`)) {
+                return;
+            }
+            
+            // Блокируем кнопку
+            const btn = document.getElementById('withdrawBtn');
+            btn.disabled = true;
+            
+            document.getElementById('withdrawStatus').innerHTML = 
+                `⏳ Отправка запроса...`;
+            
+            if (tg && userId) {
+                // Отправляем через WebApp
+                const data = {
+                    action: 'withdraw',
+                    user_id: userId,
+                    amount_ml: withdrawAmount,
+                    amount_l: parseFloat(withdrawLiters)
+                };
+                
+                console.log('Отправка данных:', data);
+                tg.sendData(JSON.stringify(data));
+                
+                // Таймаут
+                setTimeout(() => {
+                    if (btn.disabled) {
+                        btn.disabled = false;
+                        document.getElementById('withdrawStatus').innerHTML = 
+                            '❌ Таймаут. Попробуй снова.';
+                    }
+                }, 10000);
+                
+            } else {
+                // Если нет WebApp - открываем бота с параметром
+                const startParam = `withdraw_${withdrawAmount}_${withdrawLiters}`;
+                const url = `https://t.me/${BOT_USERNAME}?start=${startParam}`;
+                
+                // Сохраняем состояние
+                localStorage.setItem('pendingWithdraw', JSON.stringify({
+                    amount: withdrawAmount,
+                    liters: withdrawLiters,
+                    milk: milk,
+                    timestamp: Date.now()
+                }));
+                
+                document.getElementById('withdrawStatus').innerHTML = 
+                    `🔄 Перенаправление в бота...`;
+                
+                setTimeout(() => {
+                    window.location.href = url;
+                }, 1000);
+            }
         }
         
         // ==================== ИГРОВЫЕ ФУНКЦИИ ====================
@@ -973,7 +895,7 @@
             }
             
             if (cow.isMilked) {
-                showNotification(`⏳ ${cowName} ещё отдыхает!`, 'warning');
+                showNotification(`⏳ ${cowName} отдыхает!`, 'warning');
                 return;
             }
             
@@ -1108,7 +1030,7 @@
                 }
             }
             
-            showNotification('🌾 Коровы накормлены! Кулдаун уменьшен', 'success');
+            showNotification('🌾 Коровы накормлены!', 'success');
             updateDisplay();
             saveGame();
         }
@@ -1136,7 +1058,7 @@
                 let prize = 200 * bonusMultiplier;
                 milk += prize;
                 totalMilked += prize;
-                showNotification(`🎉 Ты угадал! +${prize} мл!`, 'success');
+                showNotification(`🎉 +${prize} мл!`, 'success');
                 createMilkSplash(prize);
             } else {
                 showNotification(`😢 Не угадал! Было ${secret}`, 'error');
@@ -1155,7 +1077,7 @@
             }
             
             if (upgrades[upgrade]) {
-                showNotification('❌ Улучшение уже куплено!', 'warning');
+                showNotification('❌ Уже куплено!', 'warning');
                 return;
             }
             
@@ -1169,7 +1091,7 @@
                     showNotification('🪣 +25% к надою!', 'success');
                     break;
                 case 'auto':
-                    showNotification('🤖 Автодойка активирована!', 'success');
+                    showNotification('🤖 Автодойка!', 'success');
                     startAutoCollect();
                     break;
                 case 'superCow':
@@ -1209,13 +1131,7 @@
             document.getElementById('bonusMult').textContent = bonusMultiplier + 'x';
             document.getElementById('withdrawnTotal').textContent = Math.floor(totalWithdrawn);
             
-            // Обновляем максимальное значение для ввода
             document.getElementById('withdrawAmount').max = Math.floor(milk);
-            
-            // Прячем кнопку перехода если нет последнего вывода
-            if (lastWithdrawAmount === 0) {
-                document.getElementById('goToBotBtn').style.display = 'none';
-            }
         }
         
         function showNotification(text, type) {
@@ -1286,14 +1202,12 @@
                     }
                     if (data.upgrades) upgrades = data.upgrades;
                     if (data.bonusMultiplier) bonusMultiplier = data.bonusMultiplier;
-                    
-                    showNotification('✅ Игра загружена!', 'success');
                 } catch (e) {
                     console.error('Ошибка загрузки:', e);
                 }
             }
             
-            // Проверяем есть ли ожидающий вывод
+            // Проверяем ожидающий вывод
             const pending = localStorage.getItem('pendingWithdraw');
             if (pending) {
                 try {
@@ -1301,14 +1215,10 @@
                     const timePassed = Date.now() - data.timestamp;
                     
                     if (timePassed < 300000) { // 5 минут
-                        lastWithdrawAmount = data.amount;
-                        lastWithdrawLiters = data.liters;
-                        document.getElementById('goToBotBtn').style.display = 'inline-flex';
                         document.getElementById('withdrawStatus').innerHTML = 
                             `⏳ Ожидается подтверждение вывода ${data.amount} мл...`;
                     }
                     
-                    // Удаляем после проверки
                     localStorage.removeItem('pendingWithdraw');
                 } catch (e) {}
             }
