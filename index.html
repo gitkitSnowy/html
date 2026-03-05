@@ -13,1167 +13,220 @@
         }
         
         body {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #87CEEB 0%, #98FB98 100%);
             min-height: 100vh;
-            padding: 15px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 16px;
         }
         
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-        
-        .header {
-            background: rgba(255, 255, 255, 0.95);
+        .game-container {
+            max-width: 800px;
+            width: 100%;
+            background: rgba(255, 255, 255, 0.9);
             backdrop-filter: blur(10px);
-            border-radius: 20px;
-            padding: 20px;
-            margin-bottom: 20px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            flex-wrap: wrap;
-            gap: 15px;
+            border-radius: 40px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            border: 2px solid rgba(255,255,255,0.5);
+            text-align: center;
         }
         
-        .header-left {
+        /* Шапка */
+        .header {
             display: flex;
             align-items: center;
+            justify-content: center;
+            margin-bottom: 30px;
             gap: 15px;
         }
         
         .logo {
-            font-size: 48px;
-            line-height: 1;
+            font-size: 64px;
+            animation: float 3s infinite;
         }
         
-        .title h1 {
-            font-size: 24px;
-            color: #333;
-            margin-bottom: 5px;
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
         }
         
-        .title p {
-            color: #666;
-            font-size: 14px;
+        h1 {
+            font-size: 36px;
+            color: #4a4a4a;
+            text-shadow: 2px 2px 4px rgba(255,255,255,0.5);
         }
         
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            gap: 15px;
-            margin-bottom: 20px;
-        }
-        
-        .stat-card {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-            border-radius: 20px;
-            padding: 20px;
-            text-align: center;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
-        }
-        
-        .stat-icon {
-            font-size: 32px;
-            margin-bottom: 10px;
-        }
-        
-        .stat-value {
-            font-size: 32px;
-            font-weight: 700;
-            color: #333;
-            margin-bottom: 5px;
-        }
-        
-        .stat-label {
-            color: #666;
-            font-size: 14px;
-        }
-        
-        .farm-section {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-            border-radius: 20px;
-            padding: 20px;
-            margin-bottom: 20px;
-        }
-        
-        .section-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-            flex-wrap: wrap;
-            gap: 15px;
-        }
-        
-        .section-header h2 {
-            color: #333;
-            font-size: 20px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        
-        .cows-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-            gap: 15px;
-            margin-bottom: 20px;
-        }
-        
-        .cow-card {
-            background: white;
-            border-radius: 15px;
-            padding: 15px;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.3s;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-            border: 2px solid #FFD700;
-        }
-        
-        .cow-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
-        }
-        
-        .cow-card.milked {
-            opacity: 0.7;
-            filter: grayscale(0.5);
-            pointer-events: none;
+        /* Сообщение */
+        .message-box {
+            background: linear-gradient(135deg, #FFE4B5, #FFDAB9);
+            border-radius: 30px;
+            padding: 40px;
+            margin-bottom: 30px;
+            border: 3px solid #FFD700;
+            box-shadow: 0 10px 0 #8B4513;
         }
         
         .cow-emoji {
-            font-size: 64px;
-            margin-bottom: 10px;
-        }
-        
-        .cow-name {
-            font-size: 18px;
-            font-weight: 600;
-            color: #333;
-            margin-bottom: 5px;
-        }
-        
-        .milk-progress {
-            background: #f0f0f0;
-            height: 8px;
-            border-radius: 4px;
-            margin: 10px 0;
-            overflow: hidden;
-        }
-        
-        .milk-fill {
-            height: 100%;
-            background: linear-gradient(90deg, #FFD700, #FFA500);
-            width: 100%;
-            transition: width 0.3s;
-        }
-        
-        .milk-amount-small {
-            font-size: 14px;
-            color: #FF8C00;
-            font-weight: 600;
-        }
-        
-        .cooldown-timer {
-            font-size: 12px;
-            color: #999;
-            margin-top: 5px;
-        }
-        
-        .actions {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            gap: 10px;
+            font-size: 100px;
             margin-bottom: 20px;
+            animation: moo 2s infinite;
         }
         
-        .action-btn {
-            background: white;
-            border: none;
-            padding: 15px;
-            border-radius: 10px;
-            font-size: 16px;
-            font-weight: 600;
-            color: #333;
-            cursor: pointer;
-            transition: all 0.3s;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 5px;
+        @keyframes moo {
+            0%, 100% { transform: rotate(0deg); }
+            25% { transform: rotate(5deg); }
+            75% { transform: rotate(-5deg); }
         }
         
-        .action-btn:active {
-            transform: scale(0.95);
-        }
-        
-        .action-btn:disabled {
-            opacity: 0.5;
-            pointer-events: none;
-        }
-        
-        .action-emoji {
-            font-size: 24px;
-        }
-        
-        .withdraw-section {
-            background: linear-gradient(135deg, #4CAF50, #45a049);
-            border-radius: 15px;
-            padding: 20px;
-            margin-bottom: 20px;
-            text-align: center;
-        }
-        
-        .withdraw-title {
-            font-size: 20px;
-            font-weight: 600;
-            color: white;
-            margin-bottom: 15px;
-        }
-        
-        .withdraw-input-group {
-            display: flex;
-            gap: 10px;
-            max-width: 400px;
-            margin: 15px auto;
-        }
-        
-        .withdraw-input {
-            flex: 1;
-            padding: 12px;
-            border: none;
-            border-radius: 8px;
-            font-size: 16px;
-            text-align: center;
-        }
-        
-        .withdraw-btn {
-            background: white;
-            color: #4CAF50;
-            border: none;
-            padding: 12px 24px;
-            border-radius: 8px;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-        
-        .withdraw-btn:active {
-            transform: scale(0.95);
-        }
-        
-        .withdraw-btn:disabled {
-            opacity: 0.5;
-            pointer-events: none;
-        }
-        
-        .withdraw-min {
-            font-size: 14px;
-            color: white;
-            opacity: 0.9;
-        }
-        
-        .withdraw-status {
-            color: white;
-            margin-top: 10px;
-            font-weight: 500;
-            min-height: 24px;
-        }
-        
-        .shop-section {
-            background: linear-gradient(135deg, #FFE4B5, #FFDAB9);
-            border-radius: 15px;
-            padding: 20px;
-            margin-bottom: 20px;
-        }
-        
-        .shop-title {
-            font-size: 20px;
-            font-weight: 600;
-            color: #8B4513;
-            margin-bottom: 15px;
-        }
-        
-        .shop-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            gap: 10px;
-        }
-        
-        .shop-item {
-            background: white;
-            border-radius: 10px;
-            padding: 15px;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-        
-        .shop-item:hover {
-            transform: scale(1.05);
-            background: #FFF9E6;
-        }
-        
-        .shop-item:active {
-            transform: scale(0.95);
-        }
-        
-        .shop-item.disabled {
-            opacity: 0.5;
-            pointer-events: none;
-        }
-        
-        .item-emoji {
+        h2 {
             font-size: 32px;
-            margin-bottom: 10px;
+            color: #4a4a4a;
+            margin-bottom: 20px;
         }
         
-        .item-name {
-            font-weight: 600;
-            color: #333;
-            margin-bottom: 5px;
-        }
-        
-        .item-price {
-            color: #FF8C00;
-            font-weight: 600;
-        }
-        
-        .item-owned {
-            color: #4CAF50;
-            font-size: 12px;
-            margin-top: 5px;
-        }
-        
-        .connection-status {
-            display: inline-block;
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            margin-right: 8px;
-        }
-        
-        .connection-status.connected {
-            background: #4CAF50;
-            box-shadow: 0 0 10px #4CAF50;
-        }
-        
-        .connection-status.disconnected {
-            background: #f44336;
-            box-shadow: 0 0 10px #f44336;
-        }
-        
-        .notification {
-            position: fixed;
-            top: 20px;
-            right: 20px;
+        .update-text {
+            font-size: 28px;
+            font-weight: 700;
+            color: #8B4513;
             background: white;
-            padding: 15px 20px;
-            border-radius: 10px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-            transform: translateX(400px);
-            transition: transform 0.3s;
-            z-index: 1000;
-            border-left: 5px solid #4CAF50;
+            padding: 20px 30px;
+            border-radius: 60px;
+            display: inline-block;
+            margin: 20px 0;
+            border: 3px solid #FFB6C1;
+            box-shadow: 0 10px 0 #8B4513;
         }
         
-        .notification.show {
-            transform: translateX(0);
+        .description {
+            font-size: 18px;
+            color: #4a4a4a;
+            margin: 20px 0;
+            line-height: 1.6;
         }
         
-        .notification.error {
-            border-left-color: #f44336;
+        /* Корова в углу */
+        .cow-corner {
+            display: flex;
+            justify-content: space-around;
+            margin: 30px 0;
         }
         
-        .notification.warning {
-            border-left-color: #ff9800;
+        .cow-icon {
+            font-size: 48px;
+            opacity: 0.5;
         }
         
-        .bonus-tag {
-            position: absolute;
-            top: 5px;
-            right: 5px;
-            background: #FFD700;
-            color: #333;
-            padding: 3px 8px;
-            border-radius: 12px;
-            font-size: 11px;
-            font-weight: 600;
-        }
-        
-        .milk-splash {
-            position: fixed;
-            pointer-events: none;
+        /* Кнопка канала */
+        .channel-btn {
+            background: linear-gradient(135deg, #FFD700, #FFA500);
+            color: white;
+            border: none;
+            padding: 20px 40px;
+            border-radius: 60px;
             font-size: 24px;
-            animation: splash 1s forwards;
-            z-index: 1000;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 10px 0 #8B4513;
+            display: inline-flex;
+            align-items: center;
+            gap: 15px;
+            text-decoration: none;
+            margin-top: 20px;
         }
         
-        @keyframes splash {
-            0% {
-                opacity: 1;
-                transform: scale(0.5) translateY(0);
-            }
-            100% {
-                opacity: 0;
-                transform: scale(2) translateY(-50px);
-            }
+        .channel-btn:active {
+            transform: translateY(5px);
+            box-shadow: 0 5px 0 #8B4513;
         }
         
-        @media (max-width: 768px) {
-            .stats-grid {
-                grid-template-columns: repeat(2, 1fr);
+        .channel-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 0 #8B4513;
+        }
+        
+        /* Подвал */
+        .footer {
+            margin-top: 30px;
+            color: #4a4a4a;
+            font-size: 16px;
+        }
+        
+        /* Адаптивность */
+        @media (max-width: 600px) {
+            .game-container {
+                padding: 20px;
             }
             
-            .cows-grid {
-                grid-template-columns: 1fr;
+            h1 {
+                font-size: 28px;
             }
             
-            .actions {
-                grid-template-columns: 1fr;
+            h2 {
+                font-size: 24px;
             }
             
-            .withdraw-input-group {
-                flex-direction: column;
+            .update-text {
+                font-size: 20px;
+                padding: 15px 20px;
+            }
+            
+            .channel-btn {
+                font-size: 20px;
+                padding: 15px 30px;
+            }
+            
+            .cow-emoji {
+                font-size: 80px;
             }
         }
     </style>
 </head>
 <body>
-    <div class="container">
+    <div class="game-container">
         <div class="header">
-            <div class="header-left">
-                <div class="logo">🥛</div>
-                <div class="title">
-                    <h1>Милк Ферма</h1>
-                    <p>Зарабатывай молоко и выводи в бота</p>
-                </div>
-            </div>
-            <div class="stat-card" style="min-width: 200px;">
-                <div class="stat-icon">💰</div>
-                <div class="stat-value" id="milkAmount">0</div>
-                <div class="stat-label">мл в игре</div>
-            </div>
+            <span class="logo">🥛</span>
+            <h1>Милк Ферма</h1>
         </div>
         
-        <div style="text-align: center; margin-bottom: 10px; font-size: 14px;">
-            <span class="connection-status" id="connectionStatus"></span>
-            <span id="connectionText">Проверка подключения...</span>
-        </div>
-        
-        <div class="stats-grid">
-            <div class="stat-card">
-                <div class="stat-icon">🐄</div>
-                <div class="stat-value" id="totalMilked">0</div>
-                <div class="stat-label">Надоено</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-icon">💸</div>
-                <div class="stat-value" id="withdrawnTotal">0</div>
-                <div class="stat-label">Выведено (мл)</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-icon">🥛</div>
-                <div class="stat-value" id="botMilk">0</div>
-                <div class="stat-label">В боте (л)</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-icon">✨</div>
-                <div class="stat-value" id="bonusMult">1x</div>
-                <div class="stat-label">Множитель</div>
-            </div>
-        </div>
-        
-        <div class="farm-section">
-            <div class="section-header">
-                <h2>🐄 Твои коровы</h2>
-                <span style="color: #666;">👆 Нажми на корову</span>
+        <div class="message-box">
+            <div class="cow-emoji">🐮</div>
+            <h2>Дорогие игроки!</h2>
+            
+            <div class="description">
+                Мы готовим для вас большое обновление<br>
+                с новыми возможностями и улучшениями
             </div>
             
-            <div class="cows-grid">
-                <div class="cow-card" id="cow1" onclick="milkCow(1)">
-                    <div class="cow-emoji">🐮</div>
-                    <div class="cow-name">Бурёнка</div>
-                    <div class="milk-progress">
-                        <div class="milk-fill" id="cow1Progress" style="width: 100%"></div>
-                    </div>
-                    <div class="milk-amount-small">+50 мл</div>
-                    <div class="cooldown-timer" id="cow1Timer">Готова!</div>
-                </div>
-                
-                <div class="cow-card" id="cow2" onclick="milkCow(2)">
-                    <div class="cow-emoji">🐄</div>
-                    <div class="cow-name">Зорька</div>
-                    <div class="milk-progress">
-                        <div class="milk-fill" id="cow2Progress" style="width: 100%"></div>
-                    </div>
-                    <div class="milk-amount-small">+75 мл</div>
-                    <div class="cooldown-timer" id="cow2Timer">Готова!</div>
-                </div>
-                
-                <div class="cow-card" id="cow3" onclick="milkCow(3)" style="position: relative;">
-                    <div class="cow-emoji">🐂</div>
-                    <div class="cow-name">Милка</div>
-                    <div class="milk-progress">
-                        <div class="milk-fill" id="cow3Progress" style="width: 100%"></div>
-                    </div>
-                    <div class="milk-amount-small">+100 мл</div>
-                    <div class="cooldown-timer" id="cow3Timer">Готова!</div>
-                    <div class="bonus-tag">✨</div>
-                </div>
+            <div class="update-text">
+                ⚡ БУДЕТ РАБОТАТЬ<br>В СЛЕДУЮЩЕМ ОБНОВЛЕНИИ ⚡
             </div>
             
-            <div class="actions">
-                <button class="action-btn" onclick="collectAll()">
-                    <span class="action-emoji">🤲</span>
-                    <span>Подоить всех</span>
-                    <span style="font-size: 12px;">x2 бонус</span>
-                </button>
-                <button class="action-btn" onclick="feedCows()">
-                    <span class="action-emoji">🌾</span>
-                    <span>Покормить</span>
-                    <span style="font-size: 12px;">-100 мл</span>
-                </button>
-                <button class="action-btn" onclick="playMinigame()">
-                    <span class="action-emoji">🎮</span>
-                    <span>Мини-игра</span>
-                    <span style="font-size: 12px;">x2 выигрыш</span>
-                </button>
+            <div class="description" style="margin-top: 30px;">
+                🚧 Ведутся технические работы<br>
+                🎮 Улучшаем игровой процесс<br>
+                💰 Добавляем новые способы заработка
             </div>
         </div>
         
-        <div class="withdraw-section">
-            <div class="withdraw-title">💰 Вывод в бота</div>
-            <div class="withdraw-input-group">
-                <input type="number" id="withdrawAmount" class="withdraw-input" placeholder="Сумма в мл" min="50" value="50" step="50">
-                <button class="withdraw-btn" onclick="withdrawMilk()" id="withdrawBtn">ВЫВЕСТИ</button>
-            </div>
-            <div class="withdraw-min">Минимум: 50 мл • 1000 мл = 1 л</div>
-            <div class="withdraw-status" id="withdrawStatus"></div>
+        <div class="cow-corner">
+            <span class="cow-icon">🐮</span>
+            <span class="cow-icon">🐄</span>
+            <span class="cow-icon">🐂</span>
         </div>
         
-        <div class="shop-section">
-            <div class="shop-title">🏪 Магазин улучшений</div>
-            <div class="shop-grid">
-                <div class="shop-item" onclick="buyUpgrade('bucket')" id="shopBucket">
-                    <div class="item-emoji">🪣</div>
-                    <div class="item-name">Большое ведро</div>
-                    <div class="item-price" id="bucketPrice">500 мл</div>
-                    <div class="item-owned" id="bucketOwned"></div>
-                </div>
-                <div class="shop-item" onclick="buyUpgrade('auto')" id="shopAuto">
-                    <div class="item-emoji">🤖</div>
-                    <div class="item-name">Автодойка</div>
-                    <div class="item-price" id="autoPrice">1000 мл</div>
-                    <div class="item-owned" id="autoOwned"></div>
-                </div>
-                <div class="shop-item" onclick="buyUpgrade('superCow')" id="shopSuperCow">
-                    <div class="item-emoji">🦸‍♂️</div>
-                    <div class="item-name">Супер-корова</div>
-                    <div class="item-price" id="superCowPrice">2000 мл</div>
-                    <div class="item-owned" id="superCowOwned"></div>
-                </div>
-            </div>
+        <a href="https://t.me/MilkDrinkChanel" class="channel-btn" target="_blank">
+            <span>📢</span>
+            <span>Наш канал</span>
+            <span>➡️</span>
+        </a>
+        
+        <div class="footer">
+            Следите за обновлениями в канале<br>
+            @MilkDrinkChanel
         </div>
     </div>
-
-    <div class="notification" id="notification">
-        <span id="notificationText"></span>
-    </div>
-
-    <script>
-        // ==================== КОНФИГУРАЦИЯ ====================
-        const BOT_USERNAME = 'MilkDrinkRobot'; // ЗАМЕНИ НА СВОЕГО БОТА!
-        
-        // ==================== ИГРОВЫЕ ПЕРЕМЕННЫЕ ====================
-        let milk = 0;
-        let totalMilked = 0;
-        let totalWithdrawn = 0;
-        let botMilk = 0;
-        let bonusMultiplier = 1;
-        
-        // Telegram WebApp
-        let tg = null;
-        let userId = null;
-        let userName = null;
-        let isConnected = false;
-        
-        // Данные коров
-        let cow1 = {
-            milkAmount: 50,
-            cooldown: 60,
-            lastMilked: 0,
-            isMilked: false
-        };
-        
-        let cow2 = {
-            milkAmount: 75,
-            cooldown: 90,
-            lastMilked: 0,
-            isMilked: false
-        };
-        
-        let cow3 = {
-            milkAmount: 100,
-            cooldown: 120,
-            lastMilked: 0,
-            isMilked: false
-        };
-        
-        // Улучшения
-        let upgrades = {
-            bucket: false,
-            auto: false,
-            superCow: false
-        };
-        
-        let prices = {
-            bucket: 500,
-            auto: 1000,
-            superCow: 2000
-        };
-        
-        // ==================== ИНИЦИАЛИЗАЦИЯ ====================
-        window.onload = function() {
-            // Загружаем сохранение
-            loadGame();
-            
-            // Проверяем Telegram WebApp
-            if (window.Telegram && Telegram.WebApp) {
-                tg = Telegram.WebApp;
-                tg.ready();
-                tg.expand();
-                
-                if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
-                    userId = tg.initDataUnsafe.user.id;
-                    userName = tg.initDataUnsafe.user.first_name || 'Игрок';
-                    
-                    updateConnectionStatus(true);
-                    showNotification(`✅ Добро пожаловать, ${userName}!`, 'success');
-                    
-                    // Запрашиваем статистику у бота
-                    requestBotStats();
-                    
-                    // Устанавливаем обработчик сообщений
-                    setupMessageHandler();
-                } else {
-                    updateConnectionStatus(false);
-                }
-            } else {
-                updateConnectionStatus(false);
-            }
-            
-            updateDisplay();
-            startTimers();
-            startAutoSave();
-            checkPendingWithdraw();
-            
-            document.getElementById('withdrawAmount').min = 50;
-            document.getElementById('withdrawAmount').value = 50;
-        };
-        
-        // ==================== НАСТРОЙКА ОБРАБОТЧИКА ====================
-        function setupMessageHandler() {
-            if (!tg) return;
-            
-            Telegram.WebApp.onEvent('message', function(message) {
-                console.log('Сообщение от бота:', message);
-                
-                try {
-                    const data = JSON.parse(message);
-                    
-                    if (data.action === 'withdraw_success') {
-                        // Успешный вывод
-                        milk -= data.amount_ml;
-                        totalWithdrawn += data.amount_ml;
-                        botMilk = data.bot_milk;
-                        
-                        document.getElementById('withdrawStatus').innerHTML = 
-                            `✅ Выведено ${data.amount_ml} мл (${data.amount_l} л)!`;
-                        
-                        showNotification(`✅ Выведено ${data.amount_ml} мл!`, 'success');
-                        
-                        saveGame();
-                        updateDisplay();
-                        
-                        document.getElementById('withdrawBtn').disabled = false;
-                    }
-                    else if (data.action === 'withdraw_error') {
-                        document.getElementById('withdrawStatus').innerHTML = 
-                            `❌ Ошибка: ${data.message}`;
-                        
-                        showNotification(`❌ ${data.message}`, 'error');
-                        
-                        document.getElementById('withdrawBtn').disabled = false;
-                    }
-                    else if (data.action === 'stats') {
-                        botMilk = data.bot_milk;
-                        updateDisplay();
-                        showNotification(`📊 В боте: ${botMilk} л`, 'success');
-                    }
-                } catch (e) {
-                    console.log('Не JSON сообщение:', message);
-                }
-            });
-        }
-        
-        // ==================== ОБНОВЛЕНИЕ СТАТУСА ====================
-        function updateConnectionStatus(connected) {
-            isConnected = connected;
-            const statusEl = document.getElementById('connectionStatus');
-            const textEl = document.getElementById('connectionText');
-            
-            if (connected) {
-                statusEl.className = 'connection-status connected';
-                textEl.textContent = `✅ Подключено к боту (${userName})`;
-            } else {
-                statusEl.className = 'connection-status disconnected';
-                textEl.textContent = '❌ Не подключено к боту';
-            }
-        }
-        
-        // ==================== ЗАПРОС СТАТИСТИКИ ====================
-        function requestBotStats() {
-            if (!tg) return;
-            
-            tg.sendData(JSON.stringify({
-                action: 'get_stats',
-                user_id: userId
-            }));
-        }
-        
-        // ==================== ВЫВОД СРЕДСТВ ====================
-        function withdrawMilk() {
-            const input = document.getElementById('withdrawAmount');
-            let amount = parseInt(input.value);
-            
-            if (isNaN(amount) || amount < 50) {
-                showNotification('❌ Минимум 50 мл', 'error');
-                return;
-            }
-            
-            if (amount > milk) {
-                showNotification(`❌ У тебя только ${milk} мл`, 'error');
-                return;
-            }
-            
-            amount = Math.floor(amount / 50) * 50;
-            if (amount < 50) amount = 50;
-            
-            let liters = (amount / 1000).toFixed(2);
-            
-            if (!confirm(`💰 Вывести ${amount} мл (${liters} л) в бота?`)) {
-                return;
-            }
-            
-            const btn = document.getElementById('withdrawBtn');
-            btn.disabled = true;
-            
-            document.getElementById('withdrawStatus').innerHTML = `⏳ Отправка запроса...`;
-            
-            if (tg && userId) {
-                // Отправка через WebApp
-                const data = {
-                    action: 'withdraw',
-                    user_id: userId,
-                    amount_ml: amount,
-                    amount_l: parseFloat(liters)
-                };
-                
-                console.log('Отправка данных:', data);
-                tg.sendData(JSON.stringify(data));
-                
-                setTimeout(() => {
-                    if (btn.disabled) {
-                        btn.disabled = false;
-                        document.getElementById('withdrawStatus').innerHTML = '❌ Таймаут';
-                    }
-                }, 10000);
-                
-            } else {
-                // Переход в бота
-                localStorage.setItem('pendingWithdraw', JSON.stringify({
-                    amount: amount,
-                    milk: milk,
-                    timestamp: Date.now()
-                }));
-                
-                document.getElementById('withdrawStatus').innerHTML = `🔄 Переход в бота...`;
-                
-                setTimeout(() => {
-                    window.location.href = `https://t.me/${BOT_USERNAME}?start=withdraw_${amount}_${liters}`;
-                }, 1000);
-            }
-        }
-        
-        // ==================== ПРОВЕРКА ВЫВОДА ====================
-        function checkPendingWithdraw() {
-            const pending = localStorage.getItem('pendingWithdraw');
-            if (pending) {
-                try {
-                    const data = JSON.parse(pending);
-                    const timePassed = Date.now() - data.timestamp;
-                    
-                    if (timePassed < 60000) {
-                        milk -= data.amount;
-                        totalWithdrawn += data.amount;
-                        
-                        document.getElementById('withdrawStatus').innerHTML = 
-                            `✅ Выведено ${data.amount} мл!`;
-                        
-                        showNotification(`✅ Выведено ${data.amount} мл!`, 'success');
-                        
-                        saveGame();
-                        updateDisplay();
-                    }
-                } catch (e) {}
-                
-                localStorage.removeItem('pendingWithdraw');
-            }
-        }
-        
-        // ==================== ИГРОВЫЕ ФУНКЦИИ ====================
-        function milkCow(cowId) {
-            let cow, cowName;
-            
-            switch(cowId) {
-                case 1: cow = cow1; cowName = "Бурёнка"; break;
-                case 2: cow = cow2; cowName = "Зорька"; break;
-                case 3: cow = cow3; cowName = "Милка"; break;
-                default: return;
-            }
-            
-            if (cow.isMilked) {
-                showNotification(`⏳ ${cowName} отдыхает!`, 'warning');
-                return;
-            }
-            
-            let amount = cow.milkAmount * bonusMultiplier;
-            
-            if (upgrades.superCow && cowId === 3) amount *= 3;
-            if (upgrades.bucket) amount = Math.floor(amount * 1.25);
-            
-            milk += amount;
-            totalMilked += amount;
-            
-            createMilkSplash(amount);
-            
-            cow.isMilked = true;
-            cow.lastMilked = Date.now();
-            
-            updateCowDisplay(cowId);
-            updateDisplay();
-            showNotification(`🥛 +${amount} мл`, 'success');
-            
-            saveGame();
-        }
-        
-        function updateCowDisplay(cowId) {
-            let cow, progressElem, timerElem, cowCard;
-            
-            switch(cowId) {
-                case 1:
-                    cow = cow1;
-                    progressElem = document.getElementById('cow1Progress');
-                    timerElem = document.getElementById('cow1Timer');
-                    cowCard = document.getElementById('cow1');
-                    break;
-                case 2:
-                    cow = cow2;
-                    progressElem = document.getElementById('cow2Progress');
-                    timerElem = document.getElementById('cow2Timer');
-                    cowCard = document.getElementById('cow2');
-                    break;
-                case 3:
-                    cow = cow3;
-                    progressElem = document.getElementById('cow3Progress');
-                    timerElem = document.getElementById('cow3Timer');
-                    cowCard = document.getElementById('cow3');
-                    break;
-                default: return;
-            }
-            
-            if (cow.isMilked) {
-                cowCard.classList.add('milked');
-                
-                let elapsed = (Date.now() - cow.lastMilked) / 1000;
-                let remaining = Math.max(0, cow.cooldown - elapsed);
-                let progress = (elapsed / cow.cooldown) * 100;
-                
-                progressElem.style.width = Math.min(100, progress) + '%';
-                
-                if (remaining <= 0) {
-                    cow.isMilked = false;
-                    cowCard.classList.remove('milked');
-                    progressElem.style.width = '100%';
-                    timerElem.textContent = 'Готова!';
-                } else {
-                    let mins = Math.floor(remaining / 60);
-                    let secs = Math.floor(remaining % 60);
-                    timerElem.textContent = `${mins}:${secs.toString().padStart(2, '0')}`;
-                }
-            } else {
-                cowCard.classList.remove('milked');
-                progressElem.style.width = '100%';
-                timerElem.textContent = 'Готова!';
-            }
-        }
-        
-        function startTimers() {
-            setInterval(() => {
-                for (let i = 1; i <= 3; i++) {
-                    updateCowDisplay(i);
-                }
-            }, 1000);
-        }
-        
-        function collectAll() {
-            let total = 0;
-            let count = 0;
-            
-            for (let i = 1; i <= 3; i++) {
-                let cow = i === 1 ? cow1 : i === 2 ? cow2 : cow3;
-                
-                if (!cow.isMilked) {
-                    let amount = cow.milkAmount * bonusMultiplier * 2;
-                    if (upgrades.superCow && i === 3) amount *= 3;
-                    if (upgrades.bucket) amount = Math.floor(amount * 1.25);
-                    
-                    total += amount;
-                    count++;
-                    
-                    cow.isMilked = true;
-                    cow.lastMilked = Date.now();
-                }
-            }
-            
-            if (count === 0) {
-                showNotification('⏳ Все коровы отдыхают!', 'warning');
-                return;
-            }
-            
-            milk += total;
-            totalMilked += total;
-            
-            createMilkSplash(total);
-            showNotification(`🥛 +${total} мл (x2 бонус!)`, 'success');
-            
-            for (let i = 1; i <= 3; i++) updateCowDisplay(i);
-            updateDisplay();
-            saveGame();
-        }
-        
-        function feedCows() {
-            if (milk < 100) {
-                showNotification('❌ Недостаточно молока!', 'error');
-                return;
-            }
-            
-            milk -= 100;
-            
-            for (let i = 1; i <= 3; i++) {
-                let cow = i === 1 ? cow1 : i === 2 ? cow2 : cow3;
-                if (cow.isMilked) {
-                    cow.lastMilked -= 30000;
-                }
-            }
-            
-            showNotification('🌾 Коровы накормлены!', 'success');
-            updateDisplay();
-            saveGame();
-        }
-        
-        function playMinigame() {
-            if (milk < 50) {
-                showNotification('❌ Нужно 50 мл', 'error');
-                return;
-            }
-            
-            milk -= 50;
-            updateDisplay();
-            
-            let secret = Math.floor(Math.random() * 10) + 1;
-            let guess = prompt('🎮 Угадай число от 1 до 10:');
-            
-            if (guess === null) {
-                showNotification('❌ Игра отменена', 'warning');
-                return;
-            }
-            
-            guess = parseInt(guess);
-            
-            if (guess === secret) {
-                let prize = 200 * bonusMultiplier;
-                milk += prize;
-                totalMilked += prize;
-                showNotification(`🎉 +${prize} мл!`, 'success');
-                createMilkSplash(prize);
-            } else {
-                showNotification(`😢 Не угадал! Было ${secret}`, 'error');
-            }
-            
-            updateDisplay();
-            saveGame();
-        }
-        
-        function buyUpgrade(upgrade) {
-            let price = prices[upgrade];
-            
-            if (milk < price) {
-                showNotification('❌ Недостаточно молока!', 'error');
-                return;
-            }
-            
-            if (upgrades[upgrade]) {
-                showNotification('❌ Уже куплено!', 'warning');
-                return;
-            }
-            
-            milk -= price;
-            upgrades[upgrade] = true;
-            
-            document.getElementById(`shop${upgrade.charAt(0).toUpperCase() + upgrade.slice(1)}`).classList.add('disabled');
-            document.getElementById(`${upgrade}Owned`).textContent = '✅';
-            
-            if (upgrade === 'bucket') showNotification('🪣 +25% к надою!', 'success');
-            if (upgrade === 'auto') {
-                showNotification('🤖 Автодойка!', 'success');
-                startAutoCollect();
-            }
-            if (upgrade === 'superCow') showNotification('🦸‍♂️ x3 молока!', 'success');
-            
-            updateDisplay();
-            saveGame();
-        }
-        
-        function startAutoCollect() {
-            setInterval(() => {
-                if (upgrades.auto) {
-                    let total = 0;
-                    
-                    for (let i = 1; i <= 3; i++) {
-                        let cow = i === 1 ? cow1 : i === 2 ? cow2 : cow3;
-                        
-                        if (!cow.isMilked) {
-                            let amount = Math.floor(cow.milkAmount * 0.5);
-                            total += amount;
-                            milk += amount;
-                            totalMilked += amount;
-                            
-                            cow.isMilked = true;
-                            cow.lastMilked = Date.now() - (cow.cooldown * 500);
-                        }
-                    }
-                    
-                    if (total > 0) {
-                        showNotification(`🤖 Автособрано: ${total} мл`, 'success');
-                        updateDisplay();
-                        saveGame();
-                    }
-                }
-            }, 60000);
-        }
-        
-        function updateDisplay() {
-            document.getElementById('milkAmount').textContent = Math.floor(milk);
-            document.getElementById('totalMilked').textContent = Math.floor(totalMilked);
-            document.getElementById('withdrawnTotal').textContent = Math.floor(totalWithdrawn);
-            document.getElementById('botMilk').textContent = botMilk.toFixed(2);
-            document.getElementById('bonusMult').textContent = bonusMultiplier + 'x';
-            
-            document.getElementById('withdrawAmount').max = Math.floor(milk);
-            
-            document.getElementById('bucketPrice').textContent = prices.bucket + ' мл';
-            document.getElementById('autoPrice').textContent = prices.auto + ' мл';
-            document.getElementById('superCowPrice').textContent = prices.superCow + ' мл';
-            
-            document.getElementById('bucketOwned').textContent = upgrades.bucket ? '✅' : '';
-            document.getElementById('autoOwned').textContent = upgrades.auto ? '✅' : '';
-            document.getElementById('superCowOwned').textContent = upgrades.superCow ? '✅' : '';
-        }
-        
-        function showNotification(text, type) {
-            const notification = document.getElementById('notification');
-            const notificationText = document.getElementById('notificationText');
-            
-            notificationText.textContent = text;
-            notification.className = 'notification show';
-            
-            if (type === 'error') notification.classList.add('error');
-            else if (type === 'warning') notification.classList.add('warning');
-            else notification.classList.remove('error', 'warning');
-            
-            setTimeout(() => {
-                notification.classList.remove('show');
-            }, 2000);
-        }
-        
-        function createMilkSplash(amount) {
-            const splash = document.createElement('div');
-            splash.className = 'milk-splash';
-            splash.textContent = '🥛 +' + amount;
-            splash.style.left = Math.random() * window.innerWidth + 'px';
-            splash.style.top = Math.random() * window.innerHeight + 'px';
-            document.body.appendChild(splash);
-            
-            setTimeout(() => {
-                splash.remove();
-            }, 1000);
-        }
-        
-        function saveGame() {
-            const gameData = {
-                milk: milk,
-                totalMilked: totalMilked,
-                totalWithdrawn: totalWithdrawn,
-                cow1: { isMilked: cow1.isMilked, lastMilked: cow1.lastMilked },
-                cow2: { isMilked: cow2.isMilked, lastMilked: cow2.lastMilked },
-                cow3: { isMilked: cow3.isMilked, lastMilked: cow3.lastMilked },
-                upgrades: upgrades,
-                bonusMultiplier: bonusMultiplier
-            };
-            
-            localStorage.setItem('milkFarmSave', JSON.stringify(gameData));
-        }
-        
-        function loadGame() {
-            const saved = localStorage.getItem('milkFarmSave');
-            if (saved) {
-                try {
-                    const data = JSON.parse(saved);
-                    
-                    milk = data.milk || 0;
-                    totalMilked = data.totalMilked || 0;
-                    totalWithdrawn = data.totalWithdrawn || 0;
-                    
-                    if (data.cow1) {
-                        cow1.isMilked = data.cow1.isMilked || false;
-                        cow1.lastMilked = data.cow1.lastMilked || 0;
-                    }
-                    if (data.cow2) {
-                        cow2.isMilked = data.cow2.isMilked || false;
-                        cow2.lastMilked = data.cow2.lastMilked || 0;
-                    }
-                    if (data.cow3) {
-                        cow3.isMilked = data.cow3.isMilked || false;
-                        cow3.lastMilked = data.cow3.lastMilked || 0;
-                    }
-                    if (data.upgrades) upgrades = data.upgrades;
-                    if (data.bonusMultiplier) bonusMultiplier = data.bonusMultiplier;
-                } catch (e) {}
-            }
-        }
-        
-        function startAutoSave() {
-            setInterval(saveGame, 30000);
-        }
-    </script>
 </body>
 </html>
