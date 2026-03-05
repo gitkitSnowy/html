@@ -24,7 +24,7 @@
         .game-container {
             max-width: 800px;
             width: 100%;
-            background: rgba(255, 255, 255, 0.9);
+            background: rgba(255, 255, 255, 0.95);
             backdrop-filter: blur(10px);
             border-radius: 40px;
             padding: 24px;
@@ -214,7 +214,7 @@
             font-size: 32px;
         }
         
-        /* Кнопка вывода */
+        /* Секция вывода средств */
         .withdraw-section {
             background: linear-gradient(135deg, #4CAF50, #45a049);
             border-radius: 20px;
@@ -265,6 +265,13 @@
             opacity: 0.9;
         }
         
+        .withdraw-status {
+            color: white;
+            margin-top: 10px;
+            font-weight: 600;
+            min-height: 24px;
+        }
+        
         /* Магазин */
         .shop-section {
             background: linear-gradient(135deg, #FFE4B5, #FFDAB9);
@@ -308,6 +315,12 @@
             transform: scale(0.95);
         }
         
+        .shop-item.disabled {
+            opacity: 0.5;
+            pointer-events: none;
+            filter: grayscale(1);
+        }
+        
         .item-emoji {
             font-size: 40px;
             margin-bottom: 10px;
@@ -328,6 +341,13 @@
         .item-effect {
             font-size: 12px;
             color: #666;
+            margin-top: 5px;
+        }
+        
+        .item-owned {
+            color: #4CAF50;
+            font-size: 12px;
+            font-weight: 600;
             margin-top: 5px;
         }
         
@@ -427,6 +447,25 @@
             font-weight: 700;
         }
         
+        /* Индикатор подключения */
+        .connection-status {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        
+        .connection-status.connected {
+            background: #4CAF50;
+            box-shadow: 0 0 10px #4CAF50;
+        }
+        
+        .connection-status.disconnected {
+            background: #f44336;
+            box-shadow: 0 0 10px #f44336;
+        }
+        
         /* Адаптивность */
         @media (max-width: 600px) {
             .game-container {
@@ -473,6 +512,12 @@
                 <span class="milk-amount" id="milkAmount">0</span>
                 <span style="color: white; font-size: 20px;">мл</span>
             </div>
+        </div>
+        
+        <!-- Индикатор подключения к боту -->
+        <div style="text-align: center; margin-bottom: 10px; font-size: 14px; color: #666;">
+            <span class="connection-status" id="connectionStatus"></span>
+            <span id="connectionText">Подключение к боту...</span>
         </div>
         
         <!-- Ферма с коровами -->
@@ -540,7 +585,7 @@
             </button>
         </div>
         
-        <!-- Секция вывода средств (НОВОЕ) -->
+        <!-- Секция вывода средств -->
         <div class="withdraw-section">
             <div class="withdraw-title">💰 Вывод в бота</div>
             <button class="withdraw-btn" onclick="withdrawMilk()" id="withdrawBtn">
@@ -551,7 +596,7 @@
             <div class="withdraw-min">
                 Минимум для вывода: 50 мл • 1000 мл = 1 литр в боте
             </div>
-            <div id="withdrawStatus" style="color: white; margin-top: 10px; font-weight: 600;"></div>
+            <div class="withdraw-status" id="withdrawStatus"></div>
         </div>
         
         <!-- Магазин улучшений -->
@@ -562,25 +607,28 @@
             </div>
             
             <div class="shop-grid">
-                <div class="shop-item" onclick="buyUpgrade('bucket')">
+                <div class="shop-item" onclick="buyUpgrade('bucket')" id="shopBucket">
                     <div class="item-emoji">🪣</div>
                     <div class="item-name">Большое ведро</div>
                     <div class="item-price" id="bucketPrice">500 мл</div>
                     <div class="item-effect">+25% к надою</div>
+                    <div class="item-owned" id="bucketOwned"></div>
                 </div>
                 
-                <div class="shop-item" onclick="buyUpgrade('auto')">
+                <div class="shop-item" onclick="buyUpgrade('auto')" id="shopAuto">
                     <div class="item-emoji">🤖</div>
                     <div class="item-name">Автодойка</div>
                     <div class="item-price" id="autoPrice">1000 мл</div>
-                    <div class="item-effect">Автосбор раз в час</div>
+                    <div class="item-effect">Автосбор раз в минуту</div>
+                    <div class="item-owned" id="autoOwned"></div>
                 </div>
                 
-                <div class="shop-item" onclick="buyUpgrade('superCow')">
+                <div class="shop-item" onclick="buyUpgrade('superCow')" id="shopSuperCow">
                     <div class="item-emoji">🦸‍♂️</div>
                     <div class="item-name">Супер-корова</div>
                     <div class="item-price" id="superCowPrice">2000 мл</div>
                     <div class="item-effect">+200% к производству</div>
+                    <div class="item-owned" id="superCowOwned"></div>
                 </div>
             </div>
         </div>
@@ -601,7 +649,7 @@
             </div>
             <div class="stat-item">
                 <div class="stat-value" id="withdrawnTotal">0</div>
-                <div class="stat-label">Выведено</div>
+                <div class="stat-label">Выведено (мл)</div>
             </div>
         </div>
     </div>
@@ -622,11 +670,12 @@
         let tg = null;
         let userId = null;
         let username = null;
+        let isConnected = false;
         
         // Корова 1: Бурёнка
         let cow1 = {
             milkAmount: 50,
-            cooldown: 60,
+            cooldown: 60, // секунд
             lastMilked: 0,
             isMilked: false,
             level: 1
@@ -666,11 +715,11 @@
         
         // ==================== ИНИЦИАЛИЗАЦИЯ ====================
         window.onload = function() {
-            // Подключаемся к Telegram WebApp
+            // Проверяем, открыто ли в Telegram WebApp
             if (window.Telegram && Telegram.WebApp) {
                 tg = Telegram.WebApp;
                 tg.ready();
-                tg.expand();
+                tg.expand(); // Разворачиваем на весь экран
                 
                 // Получаем данные пользователя
                 if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
@@ -679,50 +728,88 @@
                               tg.initDataUnsafe.user.first_name || 
                               'Пользователь';
                     
+                    updateConnectionStatus(true);
                     showNotification(`✅ Добро пожаловать, ${username}!`, 'success');
                     
+                    // Загружаем игру
+                    loadGame();
+                    
                     // Запрашиваем статистику у бота
-                    tg.sendData(JSON.stringify({
-                        action: 'get_stats',
-                        user_id: userId
-                    }));
+                    requestBotStats();
+                    
+                    // Устанавливаем обработчик сообщений от бота
+                    setupMessageHandler();
+                } else {
+                    updateConnectionStatus(false);
+                    showNotification('⚠️ Не удалось получить данные пользователя', 'warning');
+                    loadGame(); // Всё равно загружаем сохранение
                 }
-                
-                // Слушаем сообщения от бота
-                tg.onEvent('message', function(message) {
-                    try {
-                        const data = JSON.parse(message);
-                        handleBotMessage(data);
-                    } catch (e) {
-                        console.error('Ошибка парсинга сообщения:', e);
-                    }
-                });
             } else {
-                showNotification('⚠️ Запусти игру через Telegram бота!', 'warning');
+                updateConnectionStatus(false);
+                showNotification('⚠️ Запусти игру через Telegram бота (команда /farm)', 'warning');
+                loadGame(); // Всё равно загружаем сохранение
             }
             
-            loadGame();
             updateDisplay();
             startAutoSave();
             startTimers();
         };
         
+        // ==================== НАСТРОЙКА ОБРАБОТЧИКА СООБЩЕНИЙ ====================
+        function setupMessageHandler() {
+            if (!tg) return;
+            
+            // Слушаем сообщения от бота
+            tg.onEvent('message', function(message) {
+                console.log('Сообщение от бота:', message);
+                try {
+                    // Пытаемся распарсить как JSON
+                    const data = JSON.parse(message);
+                    handleBotMessage(data);
+                } catch (e) {
+                    // Если не JSON, просто игнорируем
+                    console.log('Не JSON сообщение:', message);
+                }
+            });
+        }
+        
         // ==================== ОБРАБОТКА СООБЩЕНИЙ ОТ БОТА ====================
         function handleBotMessage(data) {
+            console.log('Обработка данных от бота:', data);
+            
             if (data.action === 'stats') {
                 // Обновляем статистику из бота
                 showNotification(`📊 В боте: ${data.bot_milk} л`, 'success');
-            } else if (data.action === 'withdraw_success') {
+            } 
+            else if (data.action === 'withdraw_success') {
                 // Вывод успешен
                 milk -= data.amount_ml;
                 totalWithdrawn += data.amount_ml;
-                showNotification(`✅ Выведено ${data.amount_ml} мл (${data.amount_l} л) в бота!`, 'success');
+                
+                document.getElementById('withdrawStatus').innerHTML = 
+                    `✅ Успешно выведено ${data.amount_ml} мл (${data.amount_l} л) в бота!`;
+                
+                showNotification(`✅ Выведено ${data.amount_ml} мл в бота!`, 'success');
+                createMilkSplash(data.amount_ml);
+                
                 saveGame();
                 updateDisplay();
-            } else if (data.action === 'withdraw_error') {
+                
+                // Разблокируем кнопку
+                const btn = document.getElementById('withdrawBtn');
+                btn.disabled = false;
+            } 
+            else if (data.action === 'withdraw_error') {
                 // Ошибка вывода
+                document.getElementById('withdrawStatus').innerHTML = 
+                    `❌ Ошибка: ${data.message}`;
                 showNotification(`❌ ${data.message}`, 'error');
-            } else if (data.action === 'sync_response') {
+                
+                // Разблокируем кнопку
+                const btn = document.getElementById('withdrawBtn');
+                btn.disabled = false;
+            } 
+            else if (data.action === 'sync_response') {
                 // Синхронизация с ботом
                 if (data.success) {
                     showNotification('🔄 Данные синхронизированы с ботом', 'success');
@@ -730,17 +817,49 @@
             }
         }
         
-        // ==================== ФУНКЦИЯ ВЫВОДА (НОВАЯ) ====================
+        // ==================== ОБНОВЛЕНИЕ СТАТУСА ПОДКЛЮЧЕНИЯ ====================
+        function updateConnectionStatus(connected) {
+            isConnected = connected;
+            const statusEl = document.getElementById('connectionStatus');
+            const textEl = document.getElementById('connectionText');
+            
+            if (connected) {
+                statusEl.className = 'connection-status connected';
+                textEl.textContent = `Подключено к боту (${username})`;
+            } else {
+                statusEl.className = 'connection-status disconnected';
+                textEl.textContent = 'Не подключено к боту. Используй /farm в боте!';
+            }
+        }
+        
+        // ==================== ЗАПРОС СТАТИСТИКИ У БОТА ====================
+        function requestBotStats() {
+            if (!tg) {
+                showNotification('❌ Не подключено к боту', 'error');
+                return;
+            }
+            
+            tg.sendData(JSON.stringify({
+                action: 'get_stats',
+                user_id: userId
+            }));
+        }
+        
+        // ==================== ФУНКЦИЯ ВЫВОДА ====================
         function withdrawMilk() {
             const minWithdraw = 50; // Минимум 50 мл
             
             if (milk < minWithdraw) {
                 showNotification(`❌ Нужно минимум ${minWithdraw} мл для вывода!`, 'error');
+                document.getElementById('withdrawStatus').innerHTML = 
+                    `❌ Нужно минимум ${minWithdraw} мл молока`;
                 return;
             }
             
             if (!tg) {
                 showNotification('❌ Запусти игру через Telegram бота!', 'error');
+                document.getElementById('withdrawStatus').innerHTML = 
+                    '❌ Запусти игру через команду /farm в боте';
                 return;
             }
             
@@ -755,6 +874,13 @@
             
             // Показываем подтверждение
             if (confirm(`💰 Вы уверены, что хотите вывести ${withdrawAmount} мл (${withdrawLiters.toFixed(2)} л) в бота?`)) {
+                // Блокируем кнопку
+                const btn = document.getElementById('withdrawBtn');
+                btn.disabled = true;
+                
+                document.getElementById('withdrawStatus').innerHTML = 
+                    `⏳ Отправка запроса на вывод ${withdrawAmount} мл...`;
+                
                 // Отправляем запрос на вывод
                 tg.sendData(JSON.stringify({
                     action: 'withdraw',
@@ -763,16 +889,14 @@
                     amount_l: withdrawLiters
                 }));
                 
-                document.getElementById('withdrawStatus').innerHTML = 
-                    `⏳ Запрос на вывод ${withdrawAmount} мл отправлен...`;
-                
-                // Блокируем кнопку на 5 секунд
-                const btn = document.getElementById('withdrawBtn');
-                btn.disabled = true;
+                // Таймаут на случай если бот не ответит
                 setTimeout(() => {
-                    btn.disabled = false;
-                    document.getElementById('withdrawStatus').innerHTML = '';
-                }, 5000);
+                    if (btn.disabled) {
+                        btn.disabled = false;
+                        document.getElementById('withdrawStatus').innerHTML = 
+                            '❌ Таймаут. Попробуй снова.';
+                    }
+                }, 10000);
             }
         }
         
@@ -963,7 +1087,7 @@
                 }
                 
                 if (cow.isMilked) {
-                    cow.lastMilked -= 30000;
+                    cow.lastMilked -= 30000; // Уменьшаем на 30 секунд
                 }
             }
             
@@ -1022,6 +1146,10 @@
             milk -= price;
             upgrades[upgrade] = true;
             
+            // Обновляем отображение магазина
+            document.getElementById(`shop${upgrade.charAt(0).toUpperCase() + upgrade.slice(1)}`).classList.add('disabled');
+            document.getElementById(`${upgrade}Owned`).textContent = '✅ Куплено';
+            
             switch(upgrade) {
                 case 'bucket':
                     showNotification('🪣 Ведро улучшено! +25% к надою', 'success');
@@ -1042,6 +1170,8 @@
         function startAutoCollect() {
             setInterval(() => {
                 if (upgrades.auto) {
+                    let total = 0;
+                    
                     for (let i = 1; i <= 3; i++) {
                         let cow;
                         switch(i) {
@@ -1052,14 +1182,23 @@
                         
                         if (!cow.isMilked) {
                             let amount = Math.floor(cow.milkAmount * 0.5);
+                            total += amount;
                             milk += amount;
                             totalMilked += amount;
+                            
+                            // Ставим кулдаун (половина времени)
+                            cow.isMilked = true;
+                            cow.lastMilked = Date.now() - (cow.cooldown * 500); // Половина времени прошла
                         }
                     }
-                    updateDisplay();
-                    saveGame();
+                    
+                    if (total > 0) {
+                        showNotification(`🤖 Автособрано: ${total} мл`, 'success');
+                        updateDisplay();
+                        saveGame();
+                    }
                 }
-            }, 60000);
+            }, 60000); // Каждую минуту
         }
         
         // ==================== ОБНОВЛЕНИЕ ДИСПЛЕЯ ====================
@@ -1070,9 +1209,18 @@
             document.getElementById('bonusMult').textContent = bonusMultiplier + 'x';
             document.getElementById('withdrawnTotal').textContent = Math.floor(totalWithdrawn);
             
-            document.getElementById('bucketPrice').innerHTML = `${prices.bucket} мл ${upgrades.bucket ? '✅' : ''}`;
-            document.getElementById('autoPrice').innerHTML = `${prices.auto} мл ${upgrades.auto ? '✅' : ''}`;
-            document.getElementById('superCowPrice').innerHTML = `${prices.superCow} мл ${upgrades.superCow ? '✅' : ''}`;
+            // Обновляем цены и статус в магазине
+            document.getElementById('bucketPrice').innerHTML = `${prices.bucket} мл`;
+            document.getElementById('autoPrice').innerHTML = `${prices.auto} мл`;
+            document.getElementById('superCowPrice').innerHTML = `${prices.superCow} мл`;
+            
+            document.getElementById('bucketOwned').textContent = upgrades.bucket ? '✅ Куплено' : '';
+            document.getElementById('autoOwned').textContent = upgrades.auto ? '✅ Куплено' : '';
+            document.getElementById('superCowOwned').textContent = upgrades.superCow ? '✅ Куплено' : '';
+            
+            if (upgrades.bucket) document.getElementById('shopBucket').classList.add('disabled');
+            if (upgrades.auto) document.getElementById('shopAuto').classList.add('disabled');
+            if (upgrades.superCow) document.getElementById('shopSuperCow').classList.add('disabled');
         }
         
         // ==================== УВЕДОМЛЕНИЯ ====================
@@ -1135,8 +1283,8 @@
             
             localStorage.setItem('milkFarmSave', JSON.stringify(gameData));
             
-            // Синхронизируем с ботом каждые 5 сохранений
-            if (tg && Math.random() < 0.2) {
+            // Периодически синхронизируем с ботом
+            if (tg && Math.random() < 0.3) { // 30% шанс при сохранении
                 tg.sendData(JSON.stringify({
                     action: 'sync',
                     user_id: userId,
@@ -1179,7 +1327,7 @@
         }
         
         function startAutoSave() {
-            setInterval(saveGame, 30000);
+            setInterval(saveGame, 30000); // Каждые 30 секунд
         }
     </script>
 </body>
