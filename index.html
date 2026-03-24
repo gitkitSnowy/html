@@ -295,22 +295,41 @@
             from { opacity: 0; transform: translateX(-50%) translateY(20px); }
             to { opacity: 1; transform: translateX(-50%) translateY(0); }
         }
+        
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #ffd966;
+        }
+        
+        .connected-badge {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: #4ecdc4;
+            color: #fff;
+            padding: 4px 8px;
+            border-radius: 20px;
+            font-size: 10px;
+            font-weight: bold;
+        }
     </style>
 </head>
 <body>
-    <div class="game-container">
+    <div class="game-container" id="gameContainer">
         <div class="game-header">
             <h1>🚀 КРАШ-ИГРА</h1>
+            <div id="connectionStatus" class="connected-badge" style="background: #ff6b6b;">⚡ Подключение...</div>
         </div>
 
         <div class="info-panel">
             <div class="info-card">
                 <div class="label">🥛 БАЛАНС</div>
-                <div class="value" id="balance">0.00</div>
+                <div class="value" id="balance">--</div>
             </div>
             <div class="info-card">
                 <div class="label">💎 КУПЛЕНО</div>
-                <div class="value" id="purchased">0.00</div>
+                <div class="value" id="purchased">--</div>
             </div>
             <div class="info-card">
                 <div class="label">📈 МНОЖИТЕЛЬ</div>
@@ -325,23 +344,23 @@
             <div class="crash-bar">
                 <div class="crash-progress" id="crashProgress"></div>
             </div>
-            <div class="game-status" id="gameStatus">⚡ Сделайте ставку</div>
+            <div class="game-status" id="gameStatus">⚡ Загрузка баланса...</div>
         </div>
 
         <div class="bet-section" id="betSection">
-            <input type="number" class="bet-input" id="betInput" placeholder="Введите ставку (0.1 - 100 🥛)" step="0.1" min="0.1" max="100">
+            <input type="number" class="bet-input" id="betInput" placeholder="Введите ставку (0.1 - 100 🥛)" step="0.1" min="0.1" max="100" disabled>
             <div class="bet-presets">
-                <button class="preset-btn" onclick="setBet(0.5)">0.5 🥛</button>
-                <button class="preset-btn" onclick="setBet(1)">1 🥛</button>
-                <button class="preset-btn" onclick="setBet(2)">2 🥛</button>
-                <button class="preset-btn" onclick="setBet(5)">5 🥛</button>
-                <button class="preset-btn" onclick="setBet(10)">10 🥛</button>
-                <button class="preset-btn" onclick="setBet(25)">25 🥛</button>
+                <button class="preset-btn" onclick="setBet(0.5)" disabled>0.5 🥛</button>
+                <button class="preset-btn" onclick="setBet(1)" disabled>1 🥛</button>
+                <button class="preset-btn" onclick="setBet(2)" disabled>2 🥛</button>
+                <button class="preset-btn" onclick="setBet(5)" disabled>5 🥛</button>
+                <button class="preset-btn" onclick="setBet(10)" disabled>10 🥛</button>
+                <button class="preset-btn" onclick="setBet(25)" disabled>25 🥛</button>
             </div>
         </div>
 
         <div class="control-panel">
-            <button class="btn btn-success" id="startBtn" onclick="startGame()">🚀 СТАРТ</button>
+            <button class="btn btn-success" id="startBtn" onclick="startGame()" disabled>🚀 СТАРТ</button>
             <button class="btn btn-danger hidden" id="cashoutBtn" onclick="cashout()">💰 ЗАБРАТЬ</button>
         </div>
     </div>
@@ -357,6 +376,8 @@
         let gameInterval = null;
         let rocketY = 0;
         let gameConfirmed = false;
+        let balanceLoaded = false;
+        let sessionId = 'session_' + Date.now() + '_' + Math.random();
 
         // Telegram WebApp
         const tg = window.Telegram?.WebApp;
@@ -367,43 +388,48 @@
                 tg.expand();
                 tg.ready();
                 console.log('✅ WebApp инициализирован');
-                sendToBot({ action: 'getBalance' });
+                document.getElementById('connectionStatus').textContent = '🔄 Соединение...';
+                initConnection();
             } else {
-                console.log('⚠️ Telegram WebApp не найден, работаем в демо-режиме');
-                // Демо-режим для тестирования
-                balance = 100;
-                purchased = 50;
-                updateUI();
+                console.log('❌ Telegram WebApp не найден');
+                document.getElementById('connectionStatus').textContent = '❌ Нет связи';
+                document.getElementById('gameStatus').innerHTML = '❌ Ошибка: не удалось подключиться к боту';
+                document.getElementById('gameStatus').style.color = '#ff6b6b';
             }
             
-            // Слушаем сообщения от бота
             window.addEventListener('message', handleMessage);
         });
 
-        // Отправка данных в бота
+        function initConnection() {
+            sendToBot({ 
+                action: 'init', 
+                sessionId: sessionId 
+            });
+            
+            setTimeout(() => {
+                if (!balanceLoaded) {
+                    document.getElementById('gameStatus').innerHTML = '❌ Не удалось загрузить баланс. Проверьте подключение';
+                    document.getElementById('gameStatus').style.color = '#ff6b6b';
+                    document.getElementById('connectionStatus').textContent = '❌ Ошибка';
+                }
+            }, 5000);
+            
+            setInterval(() => {
+                if (balanceLoaded && !gameActive) {
+                    sendToBot({ action: 'ping', sessionId: sessionId });
+                }
+            }, 30000);
+        }
+
         function sendToBot(data) {
             if (tg) {
+                console.log('📤 Отправка в бота:', data);
                 tg.sendData(JSON.stringify(data));
             } else {
-                console.log('📤 Отправка данных (демо):', data);
-                handleDemoResponse(data);
+                console.log('❌ Нет подключения к боту');
             }
         }
 
-        // Демо-режим для тестирования
-        function handleDemoResponse(data) {
-            if (data.action === 'getBalance') {
-                setTimeout(() => {
-                    window.postMessage(JSON.stringify({ type: 'setBalance', balance: 100, purchased: 50 }), '*');
-                }, 100);
-            } else if (data.action === 'placeBet') {
-                setTimeout(() => {
-                    window.postMessage(JSON.stringify({ type: 'gameConfirmed', bet: data.bet, crashPoint: data.crashPoint }), '*');
-                }, 500);
-            }
-        }
-
-        // Обработка сообщений от бота
         function handleMessage(event) {
             let data = event.data;
             if (typeof data === 'string') {
@@ -414,19 +440,47 @@
             
             console.log('📩 Получено от бота:', data);
             
-            if (data.type === 'setBalance') {
-                balance = data.balance;
+            if (data.type === 'init') {
+                if (data.status === 'connected') {
+                    document.getElementById('connectionStatus').textContent = '✅ Соединено';
+                    document.getElementById('connectionStatus').style.background = '#4ecdc4';
+                    balance = data.balance || 0;
+                    purchased = data.purchased || 0;
+                    balanceLoaded = true;
+                    updateUI();
+                    
+                    document.getElementById('betInput').disabled = false;
+                    document.querySelectorAll('.preset-btn').forEach(btn => btn.disabled = false);
+                    document.getElementById('startBtn').disabled = false;
+                    document.getElementById('gameStatus').innerHTML = '⚡ Сделайте ставку';
+                    document.getElementById('gameStatus').style.color = '#ffd966';
+                    
+                    if (balance === 0) {
+                        showToast('⚠️ У вас 0 молока. Получите в /milk или купите в /buy');
+                    }
+                    if (purchased === 0) {
+                        showToast('⚠️ В краш можно играть только на купленное молоко! Купите в /buy');
+                    }
+                }
+            } else if (data.type === 'setBalance') {
+                balance = data.balance || 0;
                 purchased = data.purchased || 0;
+                balanceLoaded = true;
                 updateUI();
-                showToast(`💰 Баланс обновлен: ${balance.toFixed(2)} 🥛`);
+                document.getElementById('connectionStatus').textContent = '✅ Соединено';
+                document.getElementById('connectionStatus').style.background = '#4ecdc4';
             } else if (data.type === 'error') {
                 showToast(data.message);
-                resetUI();
+                if (gameConfirmed === false) {
+                    resetUI();
+                }
             } else if (data.type === 'gameConfirmed') {
                 gameConfirmed = true;
                 currentBet = data.bet;
                 crashPoint = data.crashPoint;
                 startGameLoop();
+            } else if (data.type === 'pong') {
+                console.log('🏓 Получен пинг от сервера');
             }
         }
 
@@ -435,7 +489,7 @@
             toast.className = 'toast';
             toast.textContent = message;
             document.body.appendChild(toast);
-            setTimeout(() => toast.remove(), 2500);
+            setTimeout(() => toast.remove(), 3000);
         }
 
         function updateUI() {
@@ -446,6 +500,14 @@
         function setBet(amount) {
             if (gameActive) {
                 showToast('Игра уже идет!');
+                return;
+            }
+            if (amount > purchased) {
+                showToast(`❌ Недостаточно купленного молока! Доступно: ${purchased.toFixed(2)} л`);
+                return;
+            }
+            if (amount > balance) {
+                showToast(`❌ Недостаточно молока! Баланс: ${balance.toFixed(2)} л`);
                 return;
             }
             currentBet = amount;
@@ -472,6 +534,12 @@
                 showToast('❌ Ставка от 0.1 до 100 🥛');
                 return;
             }
+            
+            if (!balanceLoaded) {
+                showToast('⏳ Баланс еще не загружен, подождите...');
+                return;
+            }
+            
             if (bet > purchased) {
                 showToast(`❌ Можно играть только на купленное молоко! Куплено: ${purchased.toFixed(2)} л`);
                 return;
@@ -484,7 +552,6 @@
             currentBet = bet;
             crashPoint = generateCrashPoint();
             
-            // Показываем ожидание
             document.getElementById('startBtn').disabled = true;
             document.getElementById('startBtn').textContent = '⏳ ОЖИДАНИЕ...';
             document.getElementById('gameStatus').innerHTML = '⏳ Подтверждение ставки...';
@@ -492,16 +559,16 @@
             sendToBot({
                 action: 'placeBet',
                 bet: currentBet,
-                crashPoint: crashPoint
+                crashPoint: crashPoint,
+                sessionId: sessionId
             });
             
-            // Таймаут на случай если бот не ответил
             setTimeout(() => {
                 if (!gameConfirmed && document.getElementById('startBtn').disabled) {
                     document.getElementById('startBtn').disabled = false;
                     document.getElementById('startBtn').textContent = '🚀 СТАРТ';
                     document.getElementById('gameStatus').innerHTML = '⚡ Сделайте ставку';
-                    showToast('❌ Ошибка подключения к боту');
+                    showToast('❌ Ошибка подключения к боту. Попробуйте еще раз');
                 }
             }, 5000);
         }
@@ -572,7 +639,8 @@
                 action: 'gameResult',
                 won: false,
                 bet: currentBet,
-                multiplier: crashPoint
+                multiplier: crashPoint,
+                sessionId: sessionId
             });
 
             setTimeout(() => {
@@ -601,7 +669,8 @@
                 won: true,
                 bet: currentBet,
                 multiplier: currentMultiplier,
-                winAmount: winAmount
+                winAmount: winAmount,
+                sessionId: sessionId
             });
 
             showResult(true, winAmount, currentMultiplier);
@@ -626,7 +695,6 @@
             `;
             document.body.appendChild(resultDiv);
             
-            // Автоматическое закрытие через 3 секунды
             setTimeout(() => {
                 if (resultDiv.parentElement) resultDiv.remove();
             }, 3000);
@@ -649,14 +717,8 @@
             document.getElementById('crashProgress').style.width = '0%';
             gameActive = false;
             gameConfirmed = false;
-            sendToBot({ action: 'getBalance' });
+            sendToBot({ action: 'getBalance', sessionId: sessionId });
         }
-        
-        // Обновление баланса из бота
-        window.updateBalance = function(newBalance) {
-            balance = newBalance;
-            updateUI();
-        };
     </script>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
 </body>
