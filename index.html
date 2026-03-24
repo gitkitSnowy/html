@@ -74,7 +74,6 @@
         .info-card .value.bet { color: #4ecdc4; }
         .info-card .value.multiplier { color: #ff6b6b; }
 
-        /* Игровая область */
         .game-area {
             background: linear-gradient(180deg, #0a0f1a 0%, #1a1f2a 100%);
             border-radius: 24px;
@@ -229,12 +228,6 @@
             box-shadow: 0 4px 12px rgba(255, 107, 107, 0.3);
         }
 
-        .btn-primary {
-            background: linear-gradient(135deg, #4ecdc4, #44a08d);
-            color: white;
-            box-shadow: 0 4px 12px rgba(78, 205, 196, 0.3);
-        }
-
         .hidden { display: none; }
 
         .result-overlay {
@@ -264,7 +257,7 @@
         .result-card .win { color: #6bff6b; }
         .result-card .lose { color: #ff6b6b; }
         .result-card .amount { font-size: 28px; font-weight: bold; margin: 15px 0; }
-        .result-card .close-btn { margin-top: 20px; width: 100%; padding: 12px; }
+        .result-card .close-btn { margin-top: 20px; width: 100%; padding: 12px; background: linear-gradient(135deg, #4ecdc4, #44a08d); color: white; border: none; border-radius: 50px; cursor: pointer; }
 
         .explosion {
             position: absolute;
@@ -316,8 +309,8 @@
                 <div class="value" id="balance">0.00</div>
             </div>
             <div class="info-card">
-                <div class="label">💰 СТАВКА</div>
-                <div class="value bet" id="betAmount">0.00</div>
+                <div class="label">💎 КУПЛЕНО</div>
+                <div class="value" id="purchased">0.00</div>
             </div>
             <div class="info-card">
                 <div class="label">📈 МНОЖИТЕЛЬ</div>
@@ -354,6 +347,7 @@
     </div>
 
     <script>
+        // ==================== ПЕРЕМЕННЫЕ ====================
         let balance = 0;
         let purchased = 0;
         let currentBet = 0;
@@ -362,37 +356,77 @@
         let gameActive = false;
         let gameInterval = null;
         let rocketY = 0;
+        let gameConfirmed = false;
 
+        // Telegram WebApp
         const tg = window.Telegram?.WebApp;
 
+        // ==================== ИНИЦИАЛИЗАЦИЯ ====================
         document.addEventListener('DOMContentLoaded', () => {
             if (tg) {
                 tg.expand();
                 tg.ready();
+                console.log('✅ WebApp инициализирован');
                 sendToBot({ action: 'getBalance' });
+            } else {
+                console.log('⚠️ Telegram WebApp не найден, работаем в демо-режиме');
+                // Демо-режим для тестирования
+                balance = 100;
+                purchased = 50;
+                updateUI();
             }
+            
+            // Слушаем сообщения от бота
             window.addEventListener('message', handleMessage);
         });
 
+        // Отправка данных в бота
         function sendToBot(data) {
-            if (tg) tg.sendData(JSON.stringify(data));
+            if (tg) {
+                tg.sendData(JSON.stringify(data));
+            } else {
+                console.log('📤 Отправка данных (демо):', data);
+                handleDemoResponse(data);
+            }
         }
 
+        // Демо-режим для тестирования
+        function handleDemoResponse(data) {
+            if (data.action === 'getBalance') {
+                setTimeout(() => {
+                    window.postMessage(JSON.stringify({ type: 'setBalance', balance: 100, purchased: 50 }), '*');
+                }, 100);
+            } else if (data.action === 'placeBet') {
+                setTimeout(() => {
+                    window.postMessage(JSON.stringify({ type: 'gameConfirmed', bet: data.bet, crashPoint: data.crashPoint }), '*');
+                }, 500);
+            }
+        }
+
+        // Обработка сообщений от бота
         function handleMessage(event) {
-            const data = event.data;
+            let data = event.data;
             if (typeof data === 'string') {
                 try {
-                    const parsed = JSON.parse(data);
-                    if (parsed.type === 'setBalance') {
-                        balance = parsed.balance;
-                        purchased = parsed.purchased;
-                        updateUI();
-                    } else if (parsed.type === 'error') {
-                        showToast(parsed.message);
-                    } else if (parsed.type === 'gameConfirmed') {
-                        startGameLoop();
-                    }
-                } catch(e) {}
+                    data = JSON.parse(data);
+                } catch(e) { return; }
+            }
+            
+            console.log('📩 Получено от бота:', data);
+            
+            if (data.type === 'setBalance') {
+                balance = data.balance;
+                purchased = data.purchased || 0;
+                updateUI();
+                showToast(`💰 Баланс обновлен: ${balance.toFixed(2)} 🥛`);
+            } else if (data.type === 'error') {
+                showToast(data.message);
+                resetUI();
+            } else if (data.type === 'gameConfirmed') {
+                gameConfirmed = true;
+                currentBet = data.bet;
+                crashPoint = data.crashPoint;
+                startGameLoop();
             }
         }
 
@@ -406,6 +440,7 @@
 
         function updateUI() {
             document.getElementById('balance').textContent = balance.toFixed(2);
+            document.getElementById('purchased').textContent = purchased.toFixed(2);
         }
 
         function setBet(amount) {
@@ -415,7 +450,6 @@
             }
             currentBet = amount;
             document.getElementById('betInput').value = amount;
-            document.getElementById('betAmount').textContent = amount.toFixed(2);
         }
 
         function generateCrashPoint() {
@@ -449,25 +483,35 @@
 
             currentBet = bet;
             crashPoint = generateCrashPoint();
-
+            
+            // Показываем ожидание
+            document.getElementById('startBtn').disabled = true;
+            document.getElementById('startBtn').textContent = '⏳ ОЖИДАНИЕ...';
+            document.getElementById('gameStatus').innerHTML = '⏳ Подтверждение ставки...';
+            
             sendToBot({
                 action: 'placeBet',
                 bet: currentBet,
                 crashPoint: crashPoint
             });
-
-            document.getElementById('startBtn').disabled = true;
-            document.getElementById('startBtn').textContent = '⏳ ОЖИДАНИЕ...';
-            document.getElementById('gameStatus').innerHTML = '⏳ Подтверждение ставки...';
+            
+            // Таймаут на случай если бот не ответил
+            setTimeout(() => {
+                if (!gameConfirmed && document.getElementById('startBtn').disabled) {
+                    document.getElementById('startBtn').disabled = false;
+                    document.getElementById('startBtn').textContent = '🚀 СТАРТ';
+                    document.getElementById('gameStatus').innerHTML = '⚡ Сделайте ставку';
+                    showToast('❌ Ошибка подключения к боту');
+                }
+            }, 5000);
         }
 
         function startGameLoop() {
             gameActive = true;
+            gameConfirmed = false;
             currentMultiplier = 1.0;
             rocketY = 0;
 
-            document.getElementById('betAmount').textContent = currentBet.toFixed(2);
-            document.getElementById('betInput').disabled = true;
             document.getElementById('startBtn').classList.add('hidden');
             document.getElementById('cashoutBtn').classList.remove('hidden');
             document.getElementById('startBtn').disabled = false;
@@ -531,8 +575,10 @@
                 multiplier: crashPoint
             });
 
-            setTimeout(() => showResult(false, currentBet, crashPoint), 800);
-            setTimeout(() => resetUI(), 2000);
+            setTimeout(() => {
+                showResult(false, currentBet, crashPoint);
+                resetUI();
+            }, 800);
         }
 
         function cashout() {
@@ -575,10 +621,15 @@
                         <div class="amount lose">-${amount.toFixed(2)} 🥛</div>
                         <p>💥 Краш на: <strong>x${multiplier.toFixed(2)}</strong></p>
                     `}
-                    <button class="btn btn-primary close-btn" onclick="this.closest('.result-overlay').remove()">✖️ Закрыть</button>
+                    <button class="close-btn" onclick="this.closest('.result-overlay').remove()">✖️ Закрыть</button>
                 </div>
             `;
             document.body.appendChild(resultDiv);
+            
+            // Автоматическое закрытие через 3 секунды
+            setTimeout(() => {
+                if (resultDiv.parentElement) resultDiv.remove();
+            }, 3000);
         }
 
         function resetUI() {
@@ -596,8 +647,16 @@
             document.getElementById('multiplier').textContent = '1.00';
             document.getElementById('multiplierDisplay').textContent = 'x1.00';
             document.getElementById('crashProgress').style.width = '0%';
+            gameActive = false;
+            gameConfirmed = false;
             sendToBot({ action: 'getBalance' });
         }
+        
+        // Обновление баланса из бота
+        window.updateBalance = function(newBalance) {
+            balance = newBalance;
+            updateUI();
+        };
     </script>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
 </body>
