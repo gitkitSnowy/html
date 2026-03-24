@@ -34,12 +34,25 @@
         .game-header {
             text-align: center;
             margin-bottom: 20px;
+            position: relative;
         }
 
         .game-header h1 {
             font-size: 26px;
             color: #fff;
             text-shadow: 0 2px 10px rgba(0, 255, 255, 0.3);
+        }
+
+        .connection-badge {
+            position: absolute;
+            top: -5px;
+            right: 0;
+            background: #ff6b6b;
+            color: white;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 10px;
+            font-weight: bold;
         }
 
         .info-panel {
@@ -196,6 +209,7 @@
         }
 
         .preset-btn:active { transform: scale(0.96); }
+        .preset-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
         .control-panel {
             display: flex;
@@ -215,6 +229,7 @@
         }
 
         .btn:active { transform: scale(0.96); }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
         .btn-success {
             background: linear-gradient(135deg, #6bff6b, #44aa44);
@@ -295,41 +310,23 @@
             from { opacity: 0; transform: translateX(-50%) translateY(20px); }
             to { opacity: 1; transform: translateX(-50%) translateY(0); }
         }
-        
-        .loading {
-            text-align: center;
-            padding: 20px;
-            color: #ffd966;
-        }
-        
-        .connected-badge {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            background: #4ecdc4;
-            color: #fff;
-            padding: 4px 8px;
-            border-radius: 20px;
-            font-size: 10px;
-            font-weight: bold;
-        }
     </style>
 </head>
 <body>
-    <div class="game-container" id="gameContainer">
+    <div class="game-container">
         <div class="game-header">
             <h1>🚀 КРАШ-ИГРА</h1>
-            <div id="connectionStatus" class="connected-badge" style="background: #ff6b6b;">⚡ Подключение...</div>
+            <div id="connectionBadge" class="connection-badge">🔄 ПОДКЛЮЧЕНИЕ...</div>
         </div>
 
         <div class="info-panel">
             <div class="info-card">
                 <div class="label">🥛 БАЛАНС</div>
-                <div class="value" id="balance">--</div>
+                <div class="value" id="balance">0.00</div>
             </div>
             <div class="info-card">
                 <div class="label">💎 КУПЛЕНО</div>
-                <div class="value" id="purchased">--</div>
+                <div class="value" id="purchased">0.00</div>
             </div>
             <div class="info-card">
                 <div class="label">📈 МНОЖИТЕЛЬ</div>
@@ -337,17 +334,17 @@
             </div>
         </div>
 
-        <div class="game-area" id="gameArea">
+        <div class="game-area">
             <div class="rocket" id="rocket">🚀</div>
             <div class="flame" id="flame">🔥</div>
             <div class="multiplier-value" id="multiplierDisplay">x1.00</div>
             <div class="crash-bar">
                 <div class="crash-progress" id="crashProgress"></div>
             </div>
-            <div class="game-status" id="gameStatus">⚡ Загрузка баланса...</div>
+            <div class="game-status" id="gameStatus">⚡ Подключение к боту...</div>
         </div>
 
-        <div class="bet-section" id="betSection">
+        <div class="bet-section">
             <input type="number" class="bet-input" id="betInput" placeholder="Введите ставку (0.1 - 100 🥛)" step="0.1" min="0.1" max="100" disabled>
             <div class="bet-presets">
                 <button class="preset-btn" onclick="setBet(0.5)" disabled>0.5 🥛</button>
@@ -366,7 +363,6 @@
     </div>
 
     <script>
-        // ==================== ПЕРЕМЕННЫЕ ====================
         let balance = 0;
         let purchased = 0;
         let currentBet = 0;
@@ -376,118 +372,85 @@
         let gameInterval = null;
         let rocketY = 0;
         let gameConfirmed = false;
-        let balanceLoaded = false;
-        let sessionId = 'session_' + Date.now() + '_' + Math.random();
+        let connected = false;
+        let sessionId = 's_' + Date.now() + '_' + Math.random().toString(36).substr(2, 8);
 
-        // Telegram WebApp
         const tg = window.Telegram?.WebApp;
-
-        // ==================== ИНИЦИАЛИЗАЦИЯ ====================
+        
         document.addEventListener('DOMContentLoaded', () => {
-            if (tg) {
-                tg.expand();
-                tg.ready();
-                console.log('✅ WebApp инициализирован');
-                document.getElementById('connectionStatus').textContent = '🔄 Соединение...';
-                initConnection();
-            } else {
-                console.log('❌ Telegram WebApp не найден');
-                document.getElementById('connectionStatus').textContent = '❌ Нет связи';
-                document.getElementById('gameStatus').innerHTML = '❌ Ошибка: не удалось подключиться к боту';
-                document.getElementById('gameStatus').style.color = '#ff6b6b';
+            console.log('📱 Страница загружена');
+            
+            if (!tg) {
+                document.getElementById('connectionBadge').textContent = '❌ ОШИБКА';
+                document.getElementById('connectionBadge').style.background = '#ff6b6b';
+                document.getElementById('gameStatus').innerHTML = '❌ Ошибка: не удалось подключиться к Telegram';
+                return;
             }
             
-            window.addEventListener('message', handleMessage);
-        });
-
-        function initConnection() {
-            sendToBot({ 
-                action: 'init', 
-                sessionId: sessionId 
-            });
+            tg.expand();
+            tg.ready();
+            console.log('✅ WebApp инициализирован');
+            
+            sendToBot({ action: 'init', sessionId: sessionId });
             
             setTimeout(() => {
-                if (!balanceLoaded) {
-                    document.getElementById('gameStatus').innerHTML = '❌ Не удалось загрузить баланс. Проверьте подключение';
-                    document.getElementById('gameStatus').style.color = '#ff6b6b';
-                    document.getElementById('connectionStatus').textContent = '❌ Ошибка';
+                if (!connected) {
+                    document.getElementById('connectionBadge').textContent = '⚠️ НЕТ СВЯЗИ';
+                    document.getElementById('connectionBadge').style.background = '#ff6b6b';
+                    document.getElementById('gameStatus').innerHTML = '⚠️ Нет связи с ботом';
                 }
             }, 5000);
-            
-            setInterval(() => {
-                if (balanceLoaded && !gameActive) {
-                    sendToBot({ action: 'ping', sessionId: sessionId });
-                }
-            }, 30000);
-        }
+        });
 
         function sendToBot(data) {
             if (tg) {
-                console.log('📤 Отправка в бота:', data);
+                console.log('📤 Отправка:', data);
                 tg.sendData(JSON.stringify(data));
-            } else {
-                console.log('❌ Нет подключения к боту');
             }
         }
 
-        function handleMessage(event) {
+        window.addEventListener('message', (event) => {
             let data = event.data;
             if (typeof data === 'string') {
-                try {
-                    data = JSON.parse(data);
-                } catch(e) { return; }
+                try { data = JSON.parse(data); } catch(e) { return; }
             }
+            console.log('📩 Получено:', data);
             
-            console.log('📩 Получено от бота:', data);
-            
-            if (data.type === 'init') {
-                if (data.status === 'connected') {
-                    document.getElementById('connectionStatus').textContent = '✅ Соединено';
-                    document.getElementById('connectionStatus').style.background = '#4ecdc4';
-                    balance = data.balance || 0;
-                    purchased = data.purchased || 0;
-                    balanceLoaded = true;
-                    updateUI();
-                    
-                    document.getElementById('betInput').disabled = false;
-                    document.querySelectorAll('.preset-btn').forEach(btn => btn.disabled = false);
-                    document.getElementById('startBtn').disabled = false;
-                    document.getElementById('gameStatus').innerHTML = '⚡ Сделайте ставку';
-                    document.getElementById('gameStatus').style.color = '#ffd966';
-                    
-                    if (balance === 0) {
-                        showToast('⚠️ У вас 0 молока. Получите в /milk или купите в /buy');
-                    }
-                    if (purchased === 0) {
-                        showToast('⚠️ В краш можно играть только на купленное молоко! Купите в /buy');
-                    }
-                }
-            } else if (data.type === 'setBalance') {
+            if (data.type === 'init' && data.status === 'connected') {
+                connected = true;
+                document.getElementById('connectionBadge').textContent = '✅ ПОДКЛЮЧЕНО';
+                document.getElementById('connectionBadge').style.background = '#4ecdc4';
+                document.getElementById('gameStatus').innerHTML = '⚡ Сделайте ставку';
+                
                 balance = data.balance || 0;
                 purchased = data.purchased || 0;
-                balanceLoaded = true;
                 updateUI();
-                document.getElementById('connectionStatus').textContent = '✅ Соединено';
-                document.getElementById('connectionStatus').style.background = '#4ecdc4';
-            } else if (data.type === 'error') {
+                
+                document.getElementById('betInput').disabled = false;
+                document.querySelectorAll('.preset-btn').forEach(btn => btn.disabled = false);
+                document.getElementById('startBtn').disabled = false;
+            }
+            else if (data.type === 'setBalance') {
+                balance = data.balance || 0;
+                purchased = data.purchased || 0;
+                updateUI();
+            }
+            else if (data.type === 'error') {
                 showToast(data.message);
-                if (gameConfirmed === false) {
-                    resetUI();
-                }
-            } else if (data.type === 'gameConfirmed') {
+                if (!gameConfirmed) resetUI();
+            }
+            else if (data.type === 'gameConfirmed') {
                 gameConfirmed = true;
                 currentBet = data.bet;
                 crashPoint = data.crashPoint;
                 startGameLoop();
-            } else if (data.type === 'pong') {
-                console.log('🏓 Получен пинг от сервера');
             }
-        }
+        });
 
-        function showToast(message) {
+        function showToast(msg) {
             const toast = document.createElement('div');
             toast.className = 'toast';
-            toast.textContent = message;
+            toast.textContent = msg;
             document.body.appendChild(toast);
             setTimeout(() => toast.remove(), 3000);
         }
@@ -498,18 +461,9 @@
         }
 
         function setBet(amount) {
-            if (gameActive) {
-                showToast('Игра уже идет!');
-                return;
-            }
-            if (amount > purchased) {
-                showToast(`❌ Недостаточно купленного молока! Доступно: ${purchased.toFixed(2)} л`);
-                return;
-            }
-            if (amount > balance) {
-                showToast(`❌ Недостаточно молока! Баланс: ${balance.toFixed(2)} л`);
-                return;
-            }
+            if (gameActive) { showToast('Игра уже идет!'); return; }
+            if (amount > purchased) { showToast(`❌ Недостаточно купленного молока! Доступно: ${purchased.toFixed(2)} л`); return; }
+            if (amount > balance) { showToast(`❌ Недостаточно молока! Баланс: ${balance.toFixed(2)} л`); return; }
             currentBet = amount;
             document.getElementById('betInput').value = amount;
         }
@@ -524,30 +478,12 @@
         }
 
         function startGame() {
-            if (gameActive) {
-                showToast('Игра уже идет!');
-                return;
-            }
-
+            if (gameActive) { showToast('Игра уже идет!'); return; }
             const bet = parseFloat(document.getElementById('betInput').value);
-            if (isNaN(bet) || bet < 0.1 || bet > 100) {
-                showToast('❌ Ставка от 0.1 до 100 🥛');
-                return;
-            }
-            
-            if (!balanceLoaded) {
-                showToast('⏳ Баланс еще не загружен, подождите...');
-                return;
-            }
-            
-            if (bet > purchased) {
-                showToast(`❌ Можно играть только на купленное молоко! Куплено: ${purchased.toFixed(2)} л`);
-                return;
-            }
-            if (bet > balance) {
-                showToast(`❌ Недостаточно молока! Баланс: ${balance.toFixed(2)} 🥛`);
-                return;
-            }
+            if (isNaN(bet) || bet < 0.1 || bet > 100) { showToast('❌ Ставка от 0.1 до 100 🥛'); return; }
+            if (!connected) { showToast('⏳ Нет подключения к боту'); return; }
+            if (bet > purchased) { showToast(`❌ Можно играть только на купленное молоко! Куплено: ${purchased.toFixed(2)} л`); return; }
+            if (bet > balance) { showToast(`❌ Недостаточно молока! Баланс: ${balance.toFixed(2)} 🥛`); return; }
 
             currentBet = bet;
             crashPoint = generateCrashPoint();
@@ -556,19 +492,14 @@
             document.getElementById('startBtn').textContent = '⏳ ОЖИДАНИЕ...';
             document.getElementById('gameStatus').innerHTML = '⏳ Подтверждение ставки...';
             
-            sendToBot({
-                action: 'placeBet',
-                bet: currentBet,
-                crashPoint: crashPoint,
-                sessionId: sessionId
-            });
+            sendToBot({ action: 'placeBet', bet: currentBet, crashPoint: crashPoint, sessionId: sessionId });
             
             setTimeout(() => {
                 if (!gameConfirmed && document.getElementById('startBtn').disabled) {
                     document.getElementById('startBtn').disabled = false;
                     document.getElementById('startBtn').textContent = '🚀 СТАРТ';
                     document.getElementById('gameStatus').innerHTML = '⚡ Сделайте ставку';
-                    showToast('❌ Ошибка подключения к боту. Попробуйте еще раз');
+                    showToast('❌ Ошибка подключения');
                 }
             }, 5000);
         }
@@ -581,27 +512,20 @@
 
             document.getElementById('startBtn').classList.add('hidden');
             document.getElementById('cashoutBtn').classList.remove('hidden');
-            document.getElementById('startBtn').disabled = false;
-            document.getElementById('startBtn').textContent = '🚀 СТАРТ';
             document.getElementById('gameStatus').innerHTML = '🚀 Ракета взлетает...';
             document.getElementById('gameStatus').style.color = '#4ecdc4';
 
             const rocket = document.getElementById('rocket');
             rocket.style.transform = '';
-
             if (gameInterval) clearInterval(gameInterval);
             gameInterval = setInterval(() => {
                 if (!gameActive) return;
-
                 currentMultiplier = Math.min(currentMultiplier + 0.02, crashPoint);
                 updateMultiplierDisplay();
-
                 const progress = (currentMultiplier / crashPoint) * 100;
                 document.getElementById('crashProgress').style.width = Math.min(progress, 100) + '%';
-
                 rocketY = Math.min(rocketY + 2, 60);
                 rocket.style.transform = `translateY(-${rocketY}px)`;
-
                 if (currentMultiplier >= crashPoint) crash();
             }, 40);
         }
@@ -616,7 +540,7 @@
             gameActive = false;
             if (gameInterval) clearInterval(gameInterval);
 
-            const gameArea = document.getElementById('gameArea');
+            const gameArea = document.querySelector('.game-area');
             const explosion = document.createElement('div');
             explosion.className = 'explosion';
             explosion.textContent = '💥';
@@ -634,19 +558,8 @@
             document.getElementById('gameStatus').style.color = '#ff6b6b';
 
             setTimeout(() => explosion.remove(), 500);
-
-            sendToBot({
-                action: 'gameResult',
-                won: false,
-                bet: currentBet,
-                multiplier: crashPoint,
-                sessionId: sessionId
-            });
-
-            setTimeout(() => {
-                showResult(false, currentBet, crashPoint);
-                resetUI();
-            }, 800);
+            sendToBot({ action: 'gameResult', won: false, bet: currentBet, multiplier: crashPoint, sessionId: sessionId });
+            setTimeout(() => { showResult(false, currentBet, crashPoint); resetUI(); }, 800);
         }
 
         function cashout() {
@@ -655,7 +568,6 @@
             if (gameInterval) clearInterval(gameInterval);
 
             const winAmount = currentBet * currentMultiplier;
-
             document.getElementById('gameStatus').innerHTML = `✅ ВЫИГРЫШ ЗАБРАН! +${winAmount.toFixed(2)} 🥛`;
             document.getElementById('gameStatus').style.color = '#6bff6b';
 
@@ -664,15 +576,7 @@
             rocket.style.transform = 'scale(1.2)';
             setTimeout(() => rocket.style.transform = '', 300);
 
-            sendToBot({
-                action: 'gameResult',
-                won: true,
-                bet: currentBet,
-                multiplier: currentMultiplier,
-                winAmount: winAmount,
-                sessionId: sessionId
-            });
-
+            sendToBot({ action: 'gameResult', won: true, bet: currentBet, multiplier: currentMultiplier, winAmount: winAmount, sessionId: sessionId });
             showResult(true, winAmount, currentMultiplier);
             setTimeout(() => resetUI(), 2000);
         }
@@ -683,21 +587,12 @@
             resultDiv.innerHTML = `
                 <div class="result-card">
                     <h2 class="${won ? 'win' : 'lose'}">${won ? '🎉 ПОБЕДА! 🎉' : '💥 ПРОИГРЫШ! 💥'}</h2>
-                    ${won ? `
-                        <div class="amount win">+${amount.toFixed(2)} 🥛</div>
-                        <p>📈 Множитель: <strong>x${multiplier.toFixed(2)}</strong></p>
-                    ` : `
-                        <div class="amount lose">-${amount.toFixed(2)} 🥛</div>
-                        <p>💥 Краш на: <strong>x${multiplier.toFixed(2)}</strong></p>
-                    `}
+                    ${won ? `<div class="amount win">+${amount.toFixed(2)} 🥛</div><p>📈 Множитель: <strong>x${multiplier.toFixed(2)}</strong></p>` : `<div class="amount lose">-${amount.toFixed(2)} 🥛</div><p>💥 Краш на: <strong>x${multiplier.toFixed(2)}</strong></p>`}
                     <button class="close-btn" onclick="this.closest('.result-overlay').remove()">✖️ Закрыть</button>
                 </div>
             `;
             document.body.appendChild(resultDiv);
-            
-            setTimeout(() => {
-                if (resultDiv.parentElement) resultDiv.remove();
-            }, 3000);
+            setTimeout(() => { if (resultDiv.parentElement) resultDiv.remove(); }, 3000);
         }
 
         function resetUI() {
